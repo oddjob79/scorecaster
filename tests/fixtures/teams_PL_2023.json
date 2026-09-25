@@ -1,0 +1,17 @@
+{
+  "count": 2, "filters": {"season": "2023"},
+  "competition": {"id": 2021, "name": "Premier League", "code": "PL", "type": "LEAGUE", "emblem": ""},
+  "season": {"id": 1564, "startDate": "2023-08-11", "endDate": "2024-05-19", "currentMatchday": 38, "winner": null},
+  "teams": [
+    {"area": {"id": 2072, "name": "England", "code": "ENG", "flag": ""}, "id": 57, "name": "Arsenal FC",
+     "shortName": "Arsenal", "tla": "ARS", "crest": "https://crests.football-data.org/57.png",
+     "address": "75 Drayton Park London N5 1BU", "website": "http://www.arsenal.com", "founded": 1886,
+     "clubColors": "Red / White", "venue": "Emirates Stadium", "runningCompetitions": [], "coach": {},
+     "squad": [], "staff": [], "lastUpdated": "2022-02-10T19:48:56Z"},
+    {"area": {"id": 2072, "name": "England", "code": "ENG", "flag": ""}, "id": 351, "name": "Nottingham Forest FC",
+     "shortName": "Nottingham", "tla": "NOT", "crest": "https://crests.football-data.org/351.png",
+     "address": "Pavilion Road Nottingham NG2 5FJ", "website": "http://www.nottinghamforest.co.uk", "founded": 1865,
+     "clubColors": "Red / White", "venue": "The City Ground", "runningCompetitions": [], "coach": {},
+     "squad": [], "staff": [], "lastUpdated": "2022-02-10T19:48:56Z"}
+  ]
+}
