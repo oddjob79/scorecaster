@@ -6,20 +6,23 @@ The scope is the Premier League, over the last 3–5 seasons, using team data on
 
 ## Quick start
 
+The project uses a pyenv virtualenv called `scorecaster`. `.python-version` activates it inside the repo.
+
 ```bash
-python -m venv .venv && .venv/bin/pip install -r requirements.txt
-.venv/bin/python scripts/create_db.py                              # one-off: creates data/scorecaster.db and the raw tables
-.venv/bin/python scripts/load_data.py --seasons 2021 2022 2023 2024 2025
-.venv/bin/python scripts/build_features.py                         # builds / updates team_match_features
-.venv/bin/python scripts/export_dataset.py data/matches.csv        # modelling dataset (finished matches)
-.venv/bin/python scripts/export_dataset.py data/upcoming.csv --upcoming
-.venv/bin/python -m pytest -q
+pyenv virtualenv 3.13.12 scorecaster                     # once per machine
+pip install -r requirements.txt
+python scripts/create_db.py                              # one-off: creates data/scorecaster.db and the raw tables
+python scripts/load_data.py --seasons 2021 2022 2023 2024 2025
+python scripts/build_features.py                         # builds / updates team_match_features
+python scripts/export_dataset.py data/matches.csv        # modelling dataset (finished matches)
+python scripts/export_dataset.py data/upcoming.csv --upcoming
+python -m pytest -q
 ```
 
 To keep things up to date as the season goes on:
 
 ```bash
-.venv/bin/python scripts/load_data.py --seasons 2025 --refresh && .venv/bin/python scripts/build_features.py
+python scripts/load_data.py --seasons 2025 --refresh && python scripts/build_features.py
 ```
 
 Settings are read from `.env` or the environment:
