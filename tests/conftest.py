@@ -5,8 +5,8 @@ from pathlib import Path
 
 import pytest
 
-from percy.api.base import JsonClient
-from percy.db import Competition, Database, Match, Season, SeasonTeam, Team
+from scorecaster.api.base import JsonClient
+from scorecaster.db import Competition, Database, Match, Season, SeasonTeam, Team
 
 FIXTURES = Path(__file__).parent / "fixtures"
 

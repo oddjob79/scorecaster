@@ -5,8 +5,8 @@ from dataclasses import asdict, dataclass
 
 from sqlalchemy.orm import Session
 
-from percy.db import Area, Competition, Match, Season, SeasonTeam, Team
-from percy.ingest.records import AreaRecord, CompetitionRecord, MatchRecord, SeasonRecord, TeamRecord
+from scorecaster.db import Area, Competition, Match, Season, SeasonTeam, Team
+from scorecaster.ingest.records import AreaRecord, CompetitionRecord, MatchRecord, SeasonRecord, TeamRecord
 
 
 @dataclass

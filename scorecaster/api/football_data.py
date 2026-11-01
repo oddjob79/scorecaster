@@ -3,9 +3,9 @@ from __future__ import annotations
 
 from datetime import date, datetime
 
-from percy.api.base import FootballDataProvider, JsonClient
-from percy.api.http import HttpJsonClient, RateLimiter
-from percy.ingest.records import (AreaRecord, CompetitionRecord, MatchRecord, SeasonBundle,
+from scorecaster.api.base import FootballDataProvider, JsonClient
+from scorecaster.api.http import HttpJsonClient, RateLimiter
+from scorecaster.ingest.records import (AreaRecord, CompetitionRecord, MatchRecord, SeasonBundle,
                                   SeasonRecord, TeamRecord)
 
 

@@ -4,8 +4,8 @@ from pathlib import Path
 
 import _bootstrap  # noqa: F401
 
-from percy.config import Settings
-from percy.db import Database
+from scorecaster.config import Settings
+from scorecaster.db import Database
 
 
 def main() -> None:

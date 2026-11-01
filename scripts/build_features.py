@@ -3,9 +3,9 @@ import argparse
 
 import _bootstrap  # noqa: F401
 
-from percy.config import Settings
-from percy.db import Database
-from percy.features.builder import FeatureBuilder
+from scorecaster.config import Settings
+from scorecaster.db import Database
+from scorecaster.features.builder import FeatureBuilder
 
 
 def main() -> None:

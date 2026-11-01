@@ -4,10 +4,10 @@ from __future__ import annotations
 import logging
 from datetime import date
 
-from percy.api.base import FootballDataProvider
-from percy.db import Database, Team
-from percy.ingest.records import CompetitionRecord, SeasonBundle, TeamRecord
-from percy.ingest.repository import RawDataRepository, SaveStats
+from scorecaster.api.base import FootballDataProvider
+from scorecaster.db import Database, Team
+from scorecaster.ingest.records import CompetitionRecord, SeasonBundle, TeamRecord
+from scorecaster.ingest.repository import RawDataRepository, SaveStats
 
 log = logging.getLogger(__name__)
 

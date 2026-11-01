@@ -4,10 +4,10 @@ from datetime import date
 
 import _bootstrap  # noqa: F401
 
-from percy.api import CachedJsonClient, FootballDataOrgProvider
-from percy.config import Settings
-from percy.db import Database
-from percy.ingest.loader import HistoricalLoader
+from scorecaster.api import CachedJsonClient, FootballDataOrgProvider
+from scorecaster.config import Settings
+from scorecaster.db import Database
+from scorecaster.ingest.loader import HistoricalLoader
 
 
 def default_seasons(count: int = 5) -> list[int]:

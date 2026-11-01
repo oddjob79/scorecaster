@@ -3,10 +3,10 @@ from datetime import date
 import pytest
 from sqlalchemy import select, text
 
-from percy.analysis.dataset import DatasetLoader
-from percy.config import FeatureConfig
-from percy.features.builder import FeatureBuilder
-from percy.features.state import LeagueTable, PositionBands
+from scorecaster.analysis.dataset import DatasetLoader
+from scorecaster.config import FeatureConfig
+from scorecaster.features.builder import FeatureBuilder
+from scorecaster.features.state import LeagueTable, PositionBands
 
 CFG = FeatureConfig(form_windows=(2,), goal_windows=(2,), venue_windows=(1,),
                     position_bands=((1, 2), (3, 4)), relegation_places=1, min_games_for_strength=1)

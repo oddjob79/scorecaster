@@ -2,10 +2,10 @@ from datetime import date, datetime
 
 from sqlalchemy import func, select
 
-from percy.api import FootballDataOrgProvider, FootballDataParser
-from percy.api.http import CachedJsonClient, RateLimiter
-from percy.db import ApiResponse, Area, Match, SeasonTeam, Team
-from percy.ingest.loader import HistoricalLoader
+from scorecaster.api import FootballDataOrgProvider, FootballDataParser
+from scorecaster.api.http import CachedJsonClient, RateLimiter
+from scorecaster.db import ApiResponse, Area, Match, SeasonTeam, Team
+from scorecaster.ingest.loader import HistoricalLoader
 
 
 def test_parser_maps_match_fields(fake_client):

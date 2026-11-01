@@ -6,7 +6,7 @@ I've built the database, the data loader and the pre-match stats table on `init-
 
 ## What's in it
 
-- **Database** ([create_db.py](scripts/create_db.py)): one-off script. It creates `data/percy.db` with tables for areas, competitions, seasons, teams and matches. Running it again changes nothing.
+- **Database** ([create_db.py](scripts/create_db.py)): one-off script. It creates `data/scorecaster.db` with tables for areas, competitions, seasons, teams and matches. Running it again changes nothing.
 - **Loading** ([load_data.py](scripts/load_data.py)):
   - Stored rows are never overwritten. The one exception is a match that hasn't finished: it's updated until the result arrives, then left alone.
   - Every API response is saved in the database, so a re-run makes no requests. A full 5-season load needs about 11 requests.

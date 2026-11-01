@@ -3,9 +3,9 @@ import argparse
 
 import _bootstrap  # noqa: F401
 
-from percy.analysis.dataset import DatasetLoader
-from percy.config import Settings
-from percy.db import Database
+from scorecaster.analysis.dataset import DatasetLoader
+from scorecaster.config import Settings
+from scorecaster.db import Database
 
 
 def main() -> None:

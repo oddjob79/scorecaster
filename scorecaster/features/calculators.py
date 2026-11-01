@@ -3,8 +3,8 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
-from percy.config import FeatureConfig
-from percy.features.state import MatchContext, TeamMatchRecord, safe_div
+from scorecaster.config import FeatureConfig
+from scorecaster.features.state import MatchContext, TeamMatchRecord, safe_div
 
 Features = dict[str, float | int | None]
 

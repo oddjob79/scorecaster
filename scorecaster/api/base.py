@@ -4,7 +4,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Any
 
-from percy.ingest.records import CompetitionRecord, SeasonBundle
+from scorecaster.ingest.records import CompetitionRecord, SeasonBundle
 
 
 class ApiError(RuntimeError):

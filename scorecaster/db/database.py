@@ -8,7 +8,7 @@ from typing import Iterator
 from sqlalchemy import Engine, create_engine, event, inspect
 from sqlalchemy.orm import Session, sessionmaker
 
-from percy.db.models import Base
+from scorecaster.db.models import Base
 
 
 class Database:

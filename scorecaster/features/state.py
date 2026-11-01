@@ -6,8 +6,8 @@ from dataclasses import dataclass
 from datetime import date
 from typing import Callable, Iterable
 
-from percy.config import FeatureConfig
-from percy.db import Match
+from scorecaster.config import FeatureConfig
+from scorecaster.db import Match
 
 
 @dataclass(frozen=True)

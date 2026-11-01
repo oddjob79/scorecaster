@@ -10,8 +10,8 @@ from typing import Any, Callable
 import requests
 from sqlalchemy import select
 
-from percy.api.base import ApiError, JsonClient
-from percy.db import ApiResponse, Database
+from scorecaster.api.base import ApiError, JsonClient
+from scorecaster.db import ApiResponse, Database
 
 
 class RateLimiter:

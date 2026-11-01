@@ -3,8 +3,8 @@ from __future__ import annotations
 
 import pandas as pd
 
-from percy.db import Database
-from percy.features.schema import MATCH_VIEW, TEAM_VIEW
+from scorecaster.db import Database
+from scorecaster.features.schema import MATCH_VIEW, TEAM_VIEW
 
 
 class DatasetLoader:

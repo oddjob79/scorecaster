@@ -1,4 +1,4 @@
-# Percy
+# Scorecaster
 
 A local SQLite store of football results from the [football-data.org v4 API](https://docs.football-data.org/general/v4/index.html), plus a table of **pre-match team features** for finding out which factors drive a match result and total goals.
 
@@ -8,7 +8,7 @@ The scope is the Premier League, over the last 3–5 seasons, using team data on
 
 ```bash
 python -m venv .venv && .venv/bin/pip install -r requirements.txt
-.venv/bin/python scripts/create_db.py                              # one-off: creates data/percy.db and the raw tables
+.venv/bin/python scripts/create_db.py                              # one-off: creates data/scorecaster.db and the raw tables
 .venv/bin/python scripts/load_data.py --seasons 2021 2022 2023 2024 2025
 .venv/bin/python scripts/build_features.py                         # builds / updates team_match_features
 .venv/bin/python scripts/export_dataset.py data/matches.csv        # modelling dataset (finished matches)
@@ -27,16 +27,16 @@ Settings are read from `.env` or the environment:
 | Variable | Default |
 |---|---|
 | `FOOTBALL_DATA_KEY` | required for `load_data.py` |
-| `PERCY_DB_PATH` | `data/percy.db` |
-| `PERCY_COMPETITION` | `PL` |
+| `SCORECASTER_DB_PATH` | `data/scorecaster.db` |
+| `SCORECASTER_COMPETITION` | `PL` |
 | `FOOTBALL_DATA_RPM` | `10` (free-tier limit) |
 
-Feature settings such as windows, bands and Elo parameters are in `FeatureConfig` in `percy/config.py`.
+Feature settings such as windows, bands and Elo parameters are in `FeatureConfig` in `scorecaster/config.py`.
 
 ## What's been built
 
 ```
-percy/
+scorecaster/
   config.py             Settings (env) and FeatureConfig (feature parameters)
   db/                   SQLAlchemy models and the Database (engine + sessions, schema created without dropping anything)
   api/

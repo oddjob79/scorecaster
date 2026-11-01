@@ -7,11 +7,11 @@ from itertools import groupby
 
 from sqlalchemy import delete, select
 
-from percy.config import FeatureConfig
-from percy.db import Database, Match, Season, SeasonTeam
-from percy.features.calculators import FeatureCalculator, default_calculators
-from percy.features.schema import FeatureTableSchema
-from percy.features.state import LeagueState, MatchContext
+from scorecaster.config import FeatureConfig
+from scorecaster.db import Database, Match, Season, SeasonTeam
+from scorecaster.features.calculators import FeatureCalculator, default_calculators
+from scorecaster.features.schema import FeatureTableSchema
+from scorecaster.features.state import LeagueState, MatchContext
 
 log = logging.getLogger(__name__)
 
