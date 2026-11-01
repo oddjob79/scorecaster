@@ -1,0 +1,27 @@
+{
+  "filters": {"season": "2023"},
+  "resultSet": {"count": 2, "first": "2023-08-12", "last": "2024-03-02", "played": 1},
+  "competition": {"id": 2021, "name": "Premier League", "code": "PL", "type": "LEAGUE", "emblem": ""},
+  "matches": [
+    {"area": {"id": 2072, "name": "England", "code": "ENG", "flag": ""},
+     "competition": {"id": 2021, "name": "Premier League", "code": "PL", "type": "LEAGUE", "emblem": ""},
+     "season": {"id": 1564, "startDate": "2023-08-11", "endDate": "2024-05-19", "currentMatchday": 38, "winner": null},
+     "id": 435943, "utcDate": "2023-08-12T12:00:00Z", "status": "FINISHED", "matchday": 1, "stage": "REGULAR_SEASON",
+     "group": null, "lastUpdated": "2024-05-20T00:20:52Z",
+     "homeTeam": {"id": 57, "name": "Arsenal FC", "shortName": "Arsenal", "tla": "ARS", "crest": ""},
+     "awayTeam": {"id": 351, "name": "Nottingham Forest FC", "shortName": "Nottingham", "tla": "NOT", "crest": ""},
+     "score": {"winner": "HOME_TEAM", "duration": "REGULAR", "fullTime": {"home": 2, "away": 1}, "halfTime": {"home": 2, "away": 0}},
+     "odds": {"msg": "Activate Odds-Package in User-Panel to retrieve odds."},
+     "referees": [{"id": 11605, "name": "Michael Oliver", "type": "REFEREE", "nationality": "England"}]},
+    {"area": {"id": 2072, "name": "England", "code": "ENG", "flag": ""},
+     "competition": {"id": 2021, "name": "Premier League", "code": "PL", "type": "LEAGUE", "emblem": ""},
+     "season": {"id": 1564, "startDate": "2023-08-11", "endDate": "2024-05-19", "currentMatchday": 38, "winner": null},
+     "id": 436200, "utcDate": "2024-03-02T15:00:00Z", "status": "TIMED", "matchday": 27, "stage": "REGULAR_SEASON",
+     "group": null, "lastUpdated": "2024-02-20T00:20:52Z",
+     "homeTeam": {"id": 351, "name": "Nottingham Forest FC", "shortName": "Nottingham", "tla": "NOT", "crest": ""},
+     "awayTeam": {"id": 57, "name": "Arsenal FC", "shortName": "Arsenal", "tla": "ARS", "crest": ""},
+     "score": {"winner": null, "duration": "REGULAR", "fullTime": {"home": null, "away": null}, "halfTime": {"home": null, "away": null}},
+     "odds": {"msg": "Activate Odds-Package in User-Panel to retrieve odds."},
+     "referees": []}
+  ]
+}
