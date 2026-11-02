@@ -27,14 +27,14 @@ Notes:
 - `matches` holds the stats as columns, empty for leagues and seasons without them.
 - The `matches` unique key lets a re-run update rows in place, and lets a fixture become a result when its score arrives.
 - `downloads.body` is raw bytes: co.uk files mix encodings, so the parser decodes them.
-- `odds.line` is empty for 1X2, `2.5` for over/under, and the handicap for Asian handicap (e.g. `-0.5` home, `0.5` away).
+- `odds.line` is `0` for 1X2, `2.5` for over/under, and the handicap for Asian handicap (e.g. `-0.5` home, `0.5` away). It is never NULL, because SQLite treats NULLs as distinct in a unique constraint, which would let duplicate 1X2 rows in.
 
 ## Steps
 
 1. Replace `Area`, `Competition`, `Season`, `Team`, `SeasonTeam` and `Match` with the tables above.
 2. Add `TeamAlias`, `Download` and `Odds`.
 3. Update the exports in `scorecaster/db/__init__.py`.
-4. Point `scripts/create_db.py` at the new models.
+4. `scripts/create_db.py` creates every table on `Base`, so it picks up the new models unchanged.
 
 ## Expected test failures
 
