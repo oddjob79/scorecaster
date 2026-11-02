@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from datetime import date, datetime
 
-from sqlalchemy import Date, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import Date, DateTime, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -95,17 +95,3 @@ class Match(Base):
     def is_finished(self) -> bool:
         """True when the match has a final score."""
         return self.status == "FINISHED" and self.ft_home is not None and self.ft_away is not None
-
-
-class ApiResponse(Base):
-    """Raw API response cache so data can be re-parsed without new requests."""
-
-    __tablename__ = "api_responses"
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    path: Mapped[str] = mapped_column(String(255))
-    params: Mapped[str] = mapped_column(String(255), default="")
-    fetched_at: Mapped[datetime] = mapped_column(DateTime)
-    body: Mapped[str] = mapped_column(Text)
-
-    __table_args__ = (UniqueConstraint("path", "params"),)

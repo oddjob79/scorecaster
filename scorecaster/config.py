@@ -41,13 +41,9 @@ class FeatureConfig:
 
 @dataclass(frozen=True)
 class Settings:
-    """Runtime settings for API access and storage."""
+    """Runtime settings for storage and feature building."""
 
-    football_data_key: str = ""
-    football_data_base_url: str = "https://api.football-data.org/v4"
-    requests_per_minute: int = 10
     db_path: Path = PROJECT_ROOT / "data" / "scorecaster.db"
-    competition_code: str = "PL"
     features: FeatureConfig = field(default_factory=FeatureConfig)
 
     @property
@@ -61,8 +57,5 @@ class Settings:
         if env_file is not None:
             load_dotenv(env_file)
         return cls(
-            football_data_key=os.environ.get("FOOTBALL_DATA_KEY", ""),
-            requests_per_minute=int(os.environ.get("FOOTBALL_DATA_RPM", "10")),
             db_path=Path(os.environ.get("SCORECASTER_DB_PATH", PROJECT_ROOT / "data" / "scorecaster.db")),
-            competition_code=os.environ.get("SCORECASTER_COMPETITION", "PL"),
         )

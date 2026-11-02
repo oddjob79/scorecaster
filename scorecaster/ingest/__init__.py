@@ -1,1 +1,1 @@
-"""Loading provider data into the raw tables."""
+"""Loading football-data.co.uk CSVs into the database."""
