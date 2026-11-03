@@ -1,15 +1,16 @@
-"""Parse football-data.co.uk CSVs into seasons, teams and matches."""
+"""Parse football-data.co.uk CSVs into seasons, teams, matches and odds."""
 from __future__ import annotations
 
 import io
 import logging
+import re
 
 import pandas as pd
 from sqlalchemy import select
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from sqlalchemy.orm import Session
 
-from scorecaster.db import Competition, Database, Match, Season, Team, TeamAlias
+from scorecaster.db import Competition, Database, Match, Odds, Season, Team, TeamAlias
 from scorecaster.ingest.download import CsvFile
 
 log = logging.getLogger(__name__)
@@ -24,6 +25,23 @@ NUMBER_COLUMNS = {
 }
 TEXT_COLUMNS = {"FTR": "ft_result", "HTR": "ht_result", "Referee": "referee"}
 MATCH_KEY = ["competition_id", "match_date", "home_team_id", "away_team_id"]
+
+# Odds columns are {prefix}{C if closing}{selection}, e.g. PSCH = Pinnacle closing home, BbAv>2.5 = Betbrain average over.
+ODDS_SOURCES = {
+    "PS": "pinnacle", "P": "pinnacle", "B365": "bet365", "BFE": "betfair_exchange",
+    "Avg": "market_avg", "BbAv": "market_avg", "Max": "market_max", "BbMx": "market_max",
+}
+SKIPPED_SOURCES = ["1XB", "BFD", "BMGM", "SKB", "BW", "IW", "LB", "WH", "VC", "SJ", "SB", "GB", "BS", "BF", "BV", "CL", "PP"]
+SELECTIONS = {
+    "H": ("1X2", "home"), "D": ("1X2", "draw"), "A": ("1X2", "away"),
+    ">2.5": ("OU", "over"), "<2.5": ("OU", "under"), "AHH": ("AH", "home"), "AHA": ("AH", "away"),
+}
+_SELECTION_RE = r"(C?)(AHH|AHA|>2\.5|<2\.5|H|D|A)$"
+ODDS_PATTERN = re.compile(r"^(BbAv|BbMx|B365|BFE|Avg|Max|PS|P)" + _SELECTION_RE)
+SKIPPED_PATTERN = re.compile(rf"^({'|'.join(SKIPPED_SOURCES)})" + _SELECTION_RE)
+AH_LINE_COLUMNS = {"pre_match": ["AHh", "BbAHh"], "closing": ["AHCh"]}
+OTHER_COLUMNS = {"Div", "Time", "Bb1X2", "BbOU", "BbAH", "BbAHh", "AHh", "AHCh", "HxG", "AxG", "HFKC", "AFKC"}
+ODDS_KEY = ["match_id", "bookmaker", "market", "selection", "line", "timing"]
 
 
 def decode_csv(body: bytes) -> str:
@@ -83,6 +101,46 @@ def season_label(start_year: int) -> str:
     return f"{start_year}/{(start_year + 1) % 100:02d}"
 
 
+def unknown_columns(columns: list[str]) -> list[str]:
+    """Return the columns no parser handles or deliberately skips: ['Div', 'PSH', 'XYZ'] -> ['XYZ']."""
+    known = {*REQUIRED_COLUMNS, *NUMBER_COLUMNS, *TEXT_COLUMNS, *OTHER_COLUMNS}
+    return [c for c in columns if c not in known and not ODDS_PATTERN.match(c) and not SKIPPED_PATTERN.match(c)]
+
+
+def build_odds_rows(results_df: pd.DataFrame, match_ids: list[int], label: str) -> list[dict]:
+    """Melt the stored sources' odds columns into one row per price.
+
+    results_df columns PSCH, AHh, B365AHH and match_ids [101] -> rows like
+    {match_id 101, bookmaker 'pinnacle', market '1X2', selection 'home', line 0.0, timing 'closing', price 2.1}
+    """
+    parsed = {c: m for c in results_df.columns if (m := ODDS_PATTERN.match(c))}
+    if not parsed:
+        return []
+    line_cols = [c for cols in AH_LINE_COLUMNS.values() for c in cols if c in results_df]
+    to_numbers(results_df, [*parsed, *line_cols], label)
+    odds_df = results_df[[*parsed, *line_cols]].assign(match_id=match_ids)
+    odds_df = odds_df.melt(id_vars=["match_id", *line_cols], var_name="column", value_name="price")
+    odds_df = odds_df.dropna(subset=["price"])
+
+    odds_df["bookmaker"] = odds_df["column"].map(lambda c: ODDS_SOURCES[parsed[c][1]])
+    odds_df["timing"] = odds_df["column"].map(lambda c: "closing" if parsed[c][2] else "pre_match")
+    odds_df["market"] = odds_df["column"].map(lambda c: SELECTIONS[parsed[c][3]][0])
+    odds_df["selection"] = odds_df["column"].map(lambda c: SELECTIONS[parsed[c][3]][1])
+
+    odds_df["line"] = odds_df["market"].map({"1X2": 0.0, "OU": 2.5, "AH": float("nan")})
+    for timing, cols in AH_LINE_COLUMNS.items():
+        present = [c for c in cols if c in odds_df]
+        if not present:
+            continue
+        ah_line = odds_df[present].bfill(axis=1).iloc[:, 0]
+        is_ah = (odds_df["market"] == "AH") & (odds_df["timing"] == timing)
+        odds_df.loc[is_ah, "line"] = ah_line[is_ah]
+    is_away_ah = (odds_df["market"] == "AH") & (odds_df["selection"] == "away")
+    odds_df.loc[is_away_ah, "line"] = -odds_df.loc[is_away_ah, "line"] + 0.0
+    odds_df = odds_df.dropna(subset=["line"])
+    return odds_df[[*ODDS_KEY, "price"]].to_dict("records")
+
+
 class TeamResolver:
     """Map (country, name) to a team id via aliases, then teams, inserting unknown names as new teams."""
 
@@ -104,7 +162,7 @@ class TeamResolver:
 
 
 class MainLeagueLoader:
-    """Load a main-league season CSV into seasons, teams and matches, updating rows that already exist."""
+    """Load a main-league season CSV into seasons, teams, matches and odds, updating rows that already exist."""
 
     def __init__(self, db: Database, current_season: int) -> None:
         self.db = db
@@ -129,9 +187,26 @@ class MainLeagueLoader:
                     set_={c: stmt.excluded[c] for c in rows[0] if c not in MATCH_KEY},
                 )
                 s.connection().execute(stmt, rows)
+            odds = build_odds_rows(results_df, self._match_ids(s, season_id, rows), label)
+            if odds:
+                stmt = sqlite_insert(Odds.__table__)
+                stmt = stmt.on_conflict_do_update(index_elements=ODDS_KEY, set_={"price": stmt.excluded.price})
+                s.connection().execute(stmt, odds)
+        unknown = unknown_columns(list(results_df.columns))
+        if unknown:
+            log.warning("%s: unknown columns %s", label, ", ".join(unknown))
         missing = [c for c in [*NUMBER_COLUMNS, *TEXT_COLUMNS] if c not in results_df]
-        log.info("%s: %d matches%s", label, len(rows), f"; no {', '.join(missing)}" if missing else "")
+        log.info("%s: %d matches, %d odds%s", label, len(rows), len(odds),
+                 f"; no {', '.join(missing)}" if missing else "")
         return len(rows)
+
+    @staticmethod
+    def _match_ids(s: Session, season_id: int, rows: list[dict]) -> list[int]:
+        """Return the stored match id for each row, in row order."""
+        ids = {(d, h, a): i for i, d, h, a in s.execute(
+            select(Match.id, Match.match_date, Match.home_team_id, Match.away_team_id)
+            .where(Match.season_id == season_id))}
+        return [ids[(r["match_date"], r["home_team_id"], r["away_team_id"])] for r in rows]
 
     @staticmethod
     def _season_id(s: Session, competition_id: int, start: int) -> int:
