@@ -3,12 +3,16 @@ from __future__ import annotations
 
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Iterator
+from typing import TYPE_CHECKING, Iterable, Iterator
 
 from sqlalchemy import Engine, create_engine, event, inspect
+from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from sqlalchemy.orm import Session, sessionmaker
 
-from scorecaster.db.models import Base
+from scorecaster.db.models import Base, Competition
+
+if TYPE_CHECKING:
+    from scorecaster.config import LeagueConfig
 
 
 class Database:
@@ -41,6 +45,19 @@ class Database:
         before = self.existing_tables()
         Base.metadata.create_all(self.engine, checkfirst=True)
         return sorted(self.existing_tables() - before)
+
+    def upsert_competitions(self, leagues: Iterable[LeagueConfig]) -> int:
+        """Insert or update one competitions row per league, keyed by code. Returns the number of leagues."""
+        rows = [league.model_dump(include={"code", "country", "name", "tier", "relegation_places"})
+                for league in leagues]
+        stmt = sqlite_insert(Competition).values(rows)
+        stmt = stmt.on_conflict_do_update(
+            index_elements=["code"],
+            set_={col: stmt.excluded[col] for col in ("country", "name", "tier", "relegation_places")},
+        )
+        with self.engine.begin() as conn:
+            conn.execute(stmt)
+        return len(rows)
 
     @contextmanager
     def session(self) -> Iterator[Session]:
