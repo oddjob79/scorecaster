@@ -18,7 +18,7 @@ All in `scorecaster/db/models.py`.
 | `seasons` | id, competition_id, label (`2024/25` or `2024`), start_year, end_year | competition_id, label |
 | `teams` | id, country, name | country, name |
 | `team_aliases` | country, alias, team_id | country, alias |
-| `matches` | id, competition_id, season_id, match_date, kickoff_time, status (`finished` / `scheduled`), home_team_id, away_team_id, ft_home, ft_away, ft_result, ht_home, ht_away, ht_result, referee, home/away shots, shots on target, fouls, corners, yellows, reds | competition_id, match_date, home_team_id, away_team_id |
+| `matches` | id, competition_id, season_id, match_date, kickoff_time, status (`finished` / `scheduled` / `void`), home_team_id, away_team_id, ft_home, ft_away, ft_result, ht_home, ht_away, ht_result, referee, home/away shots, shots on target, fouls, corners, yellows, reds | competition_id, match_date, home_team_id, away_team_id |
 | `downloads` | id, url, fetched_at, body (bytes) | url |
 | `odds` | id, match_id, bookmaker, market (`1X2` / `OU` / `AH`), selection (`home` / `draw` / `away` / `over` / `under`), line, timing (`pre_match` / `closing`), price | match_id, bookmaker, market, selection, line, timing |
 
