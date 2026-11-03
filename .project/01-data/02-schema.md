@@ -14,7 +14,7 @@ All in `scorecaster/db/models.py`.
 
 | Table | Columns | Unique key |
 |---|---|---|
-| `competitions` | id, code (`E0`, `BRA`), country, name, tier, relegation_places | code |
+| `competitions` | id, code (`E0`, `BRA`), country, name, tier | code |
 | `seasons` | id, competition_id, label (`2024/25` or `2024`), start_year, end_year | competition_id, label |
 | `teams` | id, country, name | country, name |
 | `team_aliases` | country, alias, team_id | country, alias |

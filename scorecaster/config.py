@@ -57,7 +57,6 @@ class LeagueConfig(BaseModel, frozen=True):
     country: str
     name: str
     tier: int = Field(ge=1)
-    relegation_places: int = Field(ge=0)
     file_style: Literal["season", "all_seasons"]
     first_season: int | None = None
 
@@ -72,54 +71,52 @@ class LeagueConfig(BaseModel, frozen=True):
         return self
 
 
-def _main(code: str, country: str, name: str, tier: int, relegation_places: int) -> LeagueConfig:
-    return LeagueConfig(code=code, country=country, name=name, tier=tier, relegation_places=relegation_places,
-                        file_style="season", first_season=FIRST_SEASON)
+def _main(code: str, country: str, name: str, tier: int) -> LeagueConfig:
+    return LeagueConfig(code=code, country=country, name=name, tier=tier, file_style="season",
+                        first_season=FIRST_SEASON)
 
 
-def _extra(code: str, country: str, name: str, relegation_places: int) -> LeagueConfig:
-    return LeagueConfig(code=code, country=country, name=name, tier=1, relegation_places=relegation_places,
-                        file_style="all_seasons")
+def _extra(code: str, country: str, name: str) -> LeagueConfig:
+    return LeagueConfig(code=code, country=country, name=name, tier=1, file_style="all_seasons")
 
 
-# relegation_places counts automatic plus playoff relegation places; it is the fallback for the season in progress.
 LEAGUES: tuple[LeagueConfig, ...] = (
-    _main("E0", "England", "Premier League", 1, 3),
-    _main("E1", "England", "Championship", 2, 3),
-    _main("E2", "England", "League One", 3, 4),
-    _main("E3", "England", "League Two", 4, 2),
-    _main("EC", "England", "National League", 5, 4),
-    _main("SC0", "Scotland", "Premiership", 1, 2),
-    _main("SC1", "Scotland", "Championship", 2, 2),
-    _main("SC2", "Scotland", "League One", 3, 2),
-    _main("SC3", "Scotland", "League Two", 4, 1),
-    _main("D1", "Germany", "Bundesliga", 1, 3),
-    _main("D2", "Germany", "2. Bundesliga", 2, 3),
-    _main("I1", "Italy", "Serie A", 1, 3),
-    _main("I2", "Italy", "Serie B", 2, 4),
-    _main("SP1", "Spain", "La Liga", 1, 3),
-    _main("SP2", "Spain", "Segunda División", 2, 4),
-    _main("F1", "France", "Ligue 1", 1, 3),
-    _main("F2", "France", "Ligue 2", 2, 3),
-    _main("N1", "Netherlands", "Eredivisie", 1, 3),
-    _main("B1", "Belgium", "Pro League", 1, 4),
-    _main("P1", "Portugal", "Primeira Liga", 1, 3),
-    _main("T1", "Turkey", "Süper Lig", 1, 3),
-    _main("G1", "Greece", "Super League", 1, 2),
-    _extra("ARG", "Argentina", "Liga Profesional", 2),
-    _extra("AUT", "Austria", "Bundesliga", 1),
-    _extra("BRA", "Brazil", "Série A", 4),
-    _extra("DNK", "Denmark", "Superliga", 2),
-    _extra("FIN", "Finland", "Veikkausliiga", 2),
-    _extra("IRL", "Ireland", "Premier Division", 2),
-    _extra("JPN", "Japan", "J1 League", 3),
-    _extra("MEX", "Mexico", "Liga MX", 0),
-    _extra("NOR", "Norway", "Eliteserien", 3),
-    _extra("POL", "Poland", "Ekstraklasa", 3),
-    _extra("ROU", "Romania", "Liga I", 4),
-    _extra("SWE", "Sweden", "Allsvenskan", 3),
-    _extra("SWZ", "Switzerland", "Super League", 2),
-    _extra("USA", "USA", "MLS", 0),
+    _main("E0", "England", "Premier League", 1),
+    _main("E1", "England", "Championship", 2),
+    _main("E2", "England", "League One", 3),
+    _main("E3", "England", "League Two", 4),
+    _main("EC", "England", "National League", 5),
+    _main("SC0", "Scotland", "Premiership", 1),
+    _main("SC1", "Scotland", "Championship", 2),
+    _main("SC2", "Scotland", "League One", 3),
+    _main("SC3", "Scotland", "League Two", 4),
+    _main("D1", "Germany", "Bundesliga", 1),
+    _main("D2", "Germany", "2. Bundesliga", 2),
+    _main("I1", "Italy", "Serie A", 1),
+    _main("I2", "Italy", "Serie B", 2),
+    _main("SP1", "Spain", "La Liga", 1),
+    _main("SP2", "Spain", "Segunda División", 2),
+    _main("F1", "France", "Ligue 1", 1),
+    _main("F2", "France", "Ligue 2", 2),
+    _main("N1", "Netherlands", "Eredivisie", 1),
+    _main("B1", "Belgium", "Pro League", 1),
+    _main("P1", "Portugal", "Primeira Liga", 1),
+    _main("T1", "Turkey", "Süper Lig", 1),
+    _main("G1", "Greece", "Super League", 1),
+    _extra("ARG", "Argentina", "Liga Profesional"),
+    _extra("AUT", "Austria", "Bundesliga"),
+    _extra("BRA", "Brazil", "Série A"),
+    _extra("DNK", "Denmark", "Superliga"),
+    _extra("FIN", "Finland", "Veikkausliiga"),
+    _extra("IRL", "Ireland", "Premier Division"),
+    _extra("JPN", "Japan", "J1 League"),
+    _extra("MEX", "Mexico", "Liga MX"),
+    _extra("NOR", "Norway", "Eliteserien"),
+    _extra("POL", "Poland", "Ekstraklasa"),
+    _extra("ROU", "Romania", "Liga I"),
+    _extra("SWE", "Sweden", "Allsvenskan"),
+    _extra("SWZ", "Switzerland", "Super League"),
+    _extra("USA", "USA", "MLS"),
 )
 
 

@@ -2,7 +2,7 @@
 
 ## Goal
 
-Run the existing feature calculators across every loaded league on the new schema, with position bands and Elo that work for any league size.
+Run the existing feature calculators across every loaded league on the new schema, with position bands and Elo that work for any league size, plus a season-phase column.
 
 ## Depends on
 
@@ -21,16 +21,14 @@ Run the existing feature calculators across every loaded league on the new schem
    - **per-league:** one `EloRatings` per competition. `new_season` runs once per league-season, and newcomers are seeded from 05a's values per (boundary, direction, previous finish)
    - **pyramid:** one `EloRatings` per country pyramid. Teams carry their rating across divisions, and division offsets come from 05a's values per boundary. Extra leagues stay one scale per league.
    - both variants: seeds or offsets are estimated only from seasons before the one being rated (expanding window), so backtests see no later outcomes
-   - top tiers, and divisions fed from leagues that aren't loaded, use the lowest-rated-teams rule when no value exists
-6. **Relegation places per league-season:**
-   - derive from the data: teams in tier *t* in season *s* that are absent from tiers ≤ *t* in season *s+1*
-   - fall back to the competition's config value for the season in progress
-   - use the result in `TableCalculator.points_above_relegation` and in Elo newcomer ratings, replacing `FeatureConfig.relegation_places`
-7. **Ask the user before** running `scripts/build_features.py` on E0, then on everything.
+   - fallback, used when no 05a value exists (top tiers, divisions fed from leagues that aren't loaded): newcomers get the average rating of the N lowest-rated teams, where N is the number of newcomers this season (teams in the league this season that weren't in it last season)
+6. **Remove relegation:** drop `points_above_relegation` from `TableCalculator` (`scorecaster/features/calculators.py`) and `relegation_places` from `FeatureConfig` (`scorecaster/config.py`).
+7. **Season phase:** add `season_phase` (1–5) to `ExperienceCalculator`: `ceil(5 × game_number ÷ season_games)`, where `game_number` is this team's game number this season and `season_games` is the most games any team played in that league-season (the previous season's value for the season in progress). e.g. Premier League, 38 games: games 1–7 → 1, 8–15 → 2, 16–22 → 3, 23–30 → 4, 31–38 → 5.
+8. **Ask the user before** running `scripts/build_features.py` on E0, then on everything.
 
 ## Expected test failures
 
-- `tests/test_features.py`: the fixtures use the old models, and `PositionBands` takes a league size.
+- `tests/test_features.py`: the fixtures use the old models, `PositionBands` takes a league size, `FeatureConfig(relegation_places=1)` no longer exists, and the expected feature columns change.
 
 ## Scope ledger
 
@@ -39,9 +37,10 @@ Run the existing feature calculators across every loaded league on the new schem
 - steps 1–3: builder and state on the new schema
 - step 4: proportional bands
 - step 5: Elo as chosen by 05a, which also fixes the repeated-regression bug
-- relegation places from the competition config
-- step 7: runs, with permission
+- step 6: remove relegation
+- step 7: season phase
+- step 8: runs, with permission
 
 **Optional** (ticked = written)
 
-- [x] step 6: relegation places derived per league-season from the data
+- none raised

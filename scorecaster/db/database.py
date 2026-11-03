@@ -48,12 +48,12 @@ class Database:
 
     def upsert_competitions(self, leagues: Iterable[LeagueConfig]) -> int:
         """Insert or update one competitions row per league, keyed by code. Returns the number of leagues."""
-        rows = [league.model_dump(include={"code", "country", "name", "tier", "relegation_places"})
+        rows = [league.model_dump(include={"code", "country", "name", "tier"})
                 for league in leagues]
         stmt = sqlite_insert(Competition).values(rows)
         stmt = stmt.on_conflict_do_update(
             index_elements=["code"],
-            set_={col: stmt.excluded[col] for col in ("country", "name", "tier", "relegation_places")},
+            set_={col: stmt.excluded[col] for col in ("country", "name", "tier")},
         )
         with self.engine.begin() as conn:
             conn.execute(stmt)

@@ -29,7 +29,6 @@ class Competition(Base):
     country: Mapped[str] = mapped_column(String(50))
     name: Mapped[str] = mapped_column(String(100))
     tier: Mapped[int] = mapped_column(Integer)
-    relegation_places: Mapped[int] = mapped_column(Integer)
 
 
 class Season(Base):

@@ -26,8 +26,8 @@ Load many seasons of results, match stats and bookmaker odds for every league fo
 - **Matches and stats:** one `matches` table with internal IDs, keyed by competition, date and teams. Stats are columns on `matches`.
 - **Teams:** `teams` keyed by (country, name), with a hand-maintained `team_aliases` table for spelling changes.
 - **Odds table (sport-neutral):** one row per match, bookmaker, market, selection, line and timing, for example `(match 123, Pinnacle, OU, over, 2.5, closing, 1.91)`. Timings are `pre_match` (co.uk's collection-time snapshot) and `closing`.
-- **League config:** a pydantic-validated list of leagues with tier and relegation places.
-- **Feature builder:** ported to the new schema, with proportional position bands. Elo newcomers are rated from a promotion and relegation analysis.
+- **League config:** a pydantic-validated list of leagues with tier and file style.
+- **Feature builder:** ported to the new schema, with proportional position bands and a season-phase column. Elo newcomers are rated from a promotion and relegation analysis.
 
 ## Decisions
 
@@ -38,7 +38,9 @@ Load many seasons of results, match stats and bookmaker odds for every league fo
 - The feature calculators run unchanged. Builder and state are ported in this phase.
 - Position bands are proportional fifths of each league's table: `ceil(position × 5 ÷ league size)`.
 - Elo scope (per-league with seeds, or pyramid with division offsets) is decided by chunk 05a's analysis of promoted and relegated teams by tier boundary. Seeds or offsets use only earlier seasons.
-- Relegation places are derived per league-season, with the config value as fallback.
+- `points_above_relegation` and `relegation_places` are removed. The Elo fallback counts newcomers from the data.
+- `season_phase` (1–5, fifths of each team's season) goes into the feature table. Chunk 09a measures whether results are skewed or less predictable by phase.
+- Motivation metrics (promotion and European races, games remaining, deductions, split leagues, manager changes) are out of scope. The existing table features are ported unchanged, and phase 03 decides whether they stay. Season-phase uncertainty (first and last games of a season) is measured and handled as a calibration question, not modelled as motivation.
 - Validation: header check and pandas type conversion for the CSVs, pydantic for the league config.
 
 ## Chunks
@@ -55,6 +57,7 @@ Load many seasons of results, match stats and bookmaker odds for every league fo
 | 07 | [Extra leagues](07-extra-leagues.md) |
 | 08 | [Fixtures](08-fixtures.md) |
 | 09 | [Port the feature builder](09-port-feature-builder.md) |
+| 09a | [Season-phase analysis](09a-season-phase-analysis.md) |
 | 10 | [New feature calculators](10-new-feature-calculators.md) |
 | 11 | [Data-quality report](11-data-quality-report.md) |
 | 12 | [Docs](12-docs.md) |
@@ -71,7 +74,8 @@ Load many seasons of results, match stats and bookmaker odds for every league fo
 - [x] sport-neutral odds table: 1X2, over/under 2.5 and Asian handicap, pre-match and closing (06, 07)
 - [x] upcoming fixtures (08)
 - [x] promotion and relegation analysis deciding Elo scope (05a)
-- [x] feature builder ported, with proportional bands and Elo as 05a decides (09)
+- [x] feature builder ported, with proportional bands, Elo as 05a decides, and season phase (09)
+- [x] season-phase analysis (09a)
 
 **Optional**
 
@@ -80,7 +84,6 @@ Load many seasons of results, match stats and bookmaker odds for every league fo
 - [x] progress logging (04, 05)
 - [x] header check and pandas type conversion (05)
 - [x] pydantic league config (03)
-- [x] relegation places derived from the data (09)
 - [x] shot, card and odds-derived feature calculators (10)
 - [x] data-quality report (11)
 - [x] fuzzy team-name hints in the report, confirmed by hand (11)
