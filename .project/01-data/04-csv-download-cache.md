@@ -16,7 +16,7 @@ Download each football-data.co.uk CSV once into `downloads`, so re-runs and re-p
 2. For each URL, serve the stored body when `downloads` has the URL, otherwise fetch it and store the bytes.
 3. Wait on `RateLimiter` (from chunk 01) before each fetch, at 1–2 seconds per request.
 4. Log one line per file: URL, cached or fetched, size.
-5. Add `--refresh`: re-fetch the current season's main-league files, the extra-league files and the fixtures files (chunk 08), replacing the stored bodies.
+5. Refresh: `DownloadCache.get(url, refresh=True)` re-fetches and replaces the stored body. `CsvFile.is_live()` marks the files that can still change: the season in progress and the all-seasons extra-league files. The `--refresh` flag that uses them is part of `scripts/load_data.py` (chunk 05), and fixtures files join the list in chunk 08.
 6. **Ask the user before** the first real fetch: E0 2024/25 only.
 
 ## Notes
