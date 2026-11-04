@@ -37,7 +37,7 @@ Load many seasons of results, match stats and bookmaker odds for every league fo
 - Upcoming fixtures come from co.uk's fixtures files.
 - The feature calculators run unchanged. Builder and state are ported in this phase.
 - Position bands are proportional fifths of each league's table: `ceil(position × 5 ÷ league size)`.
-- Elo scope (per-league with seeds, or pyramid with division offsets) is decided by chunk 05a's analysis of promoted and relegated teams by tier boundary. Seeds or offsets use only earlier seasons.
+- Elo: pyramid Elo (one scale per country, division offsets) for England, Scotland, Germany, Italy, Spain and France; per-league elsewhere. Chosen from chunk 05a's analysis, where promoted teams struggle more the higher the tier, with a wide spread between individual teams. Offsets use only earlier seasons.
 - `points_above_relegation` and `relegation_places` are removed. The Elo fallback counts newcomers from the data.
 - `season_phase` (1–5, fifths of each team's season) goes into the feature table. Chunk 09a measures whether results are skewed or less predictable by phase.
 - Motivation metrics (promotion and European races, games remaining, deductions, split leagues, manager changes) are out of scope. The existing table features are ported unchanged, and phase 03 decides whether they stay. Season-phase uncertainty (first and last games of a season) is measured and handled as a calibration question, not modelled as motivation.
@@ -73,8 +73,8 @@ Load many seasons of results, match stats and bookmaker odds for every league fo
 - [x] matches and stats loaded for the configured leagues and seasons (05, 07)
 - [x] sport-neutral odds table: 1X2, over/under 2.5 and Asian handicap, pre-match and closing (06, 07)
 - [x] upcoming fixtures (08)
-- [x] promotion and relegation analysis deciding Elo scope (05a)
-- [x] feature builder ported, with proportional bands, Elo as 05a decides, and season phase (09)
+- [x] promotion and relegation analysis deciding Elo scope (05a): pyramid Elo chosen
+- [x] feature builder ported, with proportional bands, pyramid Elo and season phase (09)
 - [x] season-phase analysis (09a)
 
 **Optional**
