@@ -17,8 +17,8 @@ Load the extra leagues (`new/*.csv`): results and closing 1X2 odds for every sea
 ## Steps
 
 1. `read_results` renames `Home`/`Away` to `HomeTeam`/`AwayTeam` (with the existing `HG`/`AG`/`Res` renames), so both file styles parse into the same columns.
-2. `parse_season` turns a `Season` value into (label, start, end): `2024` → (`2024`, 2024, 2024), `2012/2013` → (`2012/13`, 2012, 2013).
-3. `CsvLoader` (formerly `MainLeagueLoader`) loads a per-season file as one season, and an all-seasons file grouped by `Season`. Each season shares the same team, match and odds upserts. The odds columns carry `C`, so the existing pattern stores them as `closing`.
+2. `SeasonSpan.parse` (`scorecaster/ingest/fdcuk/seasons.py`) turns a `Season` value into a label, start and end: `2024` → (`2024`, 2024, 2024), `2012/2013` → (`2012/13`, 2012, 2013).
+3. `CsvLoader` (`scorecaster/ingest/fdcuk/loader.py`) loads a per-season file as one season, and an all-seasons file grouped by `Season`. Each season shares the same team, match and odds upserts. The odds columns carry `C`, so the existing pattern stores them as `closing`.
 4. Current season, for unscored matches: a calendar-year season is current when it matches this calendar year; an August–May season is current when it starts in `current_season_start()`.
 5. `scripts/load_data.py` includes the extra leagues. `--season` narrows to per-season files only, so it skips the all-seasons files.
 6. **Ask the user before** running on one league (BRA), then before the full set.

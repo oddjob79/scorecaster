@@ -29,12 +29,12 @@ Other bookmakers' columns are recognised and skipped. Adding one is one entry in
 
 ## Steps
 
-1. In `scorecaster/ingest/fdcuk.py`, recognise odds columns with one pattern: `{prefix}{C if closing}{H|D|A|>2.5|<2.5|AHH|AHA}`, e.g. `PSCH` → (pinnacle, closing, 1X2, home) and `BbAv>2.5` → (market_avg, pre_match, OU, over).
+1. In `scorecaster/ingest/fdcuk/columns.py` (`OddsColumn`), recognise odds columns with one pattern: `{prefix}{C if closing}{H|D|A|>2.5|<2.5|AHH|AHA}`, e.g. `PSCH` → (pinnacle, closing, 1X2, home) and `BbAv>2.5` → (market_avg, pre_match, OU, over).
 2. `build_odds_rows` melts each file's odds columns into one row per price (`odds_df`):
    - `line` is 0 for 1X2 and 2.5 for over/under
    - Asian handicap: home takes `AHh` (or `BbAHh` before 2019/20) for pre-match and `AHCh` for closing, away takes the negative, and rows with no line are dropped
    - empty prices are dropped
-3. `MainLeagueLoader.load` upserts the odds on (match, bookmaker, market, selection, line, timing) after the matches, in the same transaction.
+3. `SeasonWriter.write` (`scorecaster/ingest/fdcuk/loader.py`) upserts the odds on (match, bookmaker, market, selection, line, timing) after the matches, in the same transaction.
 4. Header check: `unknown_columns` reports any column that isn't a result, stat, known odds column or listed extra (`Bb1X2`, `HxG`, …).
 5. **Ask the user before** running on E0 2024/25. Check one match's Pinnacle closing 1X2 against the CSV by hand.
 6. **Ask the user before** re-running the full config, which re-parses from the cache with no downloads.

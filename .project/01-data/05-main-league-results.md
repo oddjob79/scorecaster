@@ -10,7 +10,7 @@ Parse the cached main-league CSVs into `seasons`, `teams` and `matches` (scores 
 
 ## Steps
 
-1. In `scorecaster/ingest/fdcuk.py`, read a cached body into a DataFrame (`results_df`):
+1. In `scorecaster/ingest/fdcuk/reader.py`, read a cached body into a DataFrame (`results_df`):
    - decode as UTF-8 with BOM, falling back to cp1252
    - drop blank trailing rows and unnamed empty columns
    - trim empty fields beyond the header width (e.g. SP2 2007/08 rows ending `,,,`), and log and skip rows whose extra fields hold data

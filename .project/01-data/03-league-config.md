@@ -21,9 +21,9 @@ List every league and season to load in one validated config, and write it into 
 ## Steps
 
 1. Ask the user to add `pydantic` to `requirements.txt` and install it into the `scorecaster` pyenv virtualenv.
-2. Add a pydantic `LeagueConfig` model in `scorecaster/config.py`, with tier ≥ 1, file style one of the two values, and start season no later than the current season.
+2. Add a pydantic `LeagueConfig` model in `scorecaster/leagues.py`, with tier ≥ 1, file style one of the two values, and start season no later than the current season.
 3. Write the league list as a module-level constant `LEAGUES` beside it, with `current_season_start()` for the season in progress.
-4. Upsert the config into `competitions` (`Database.upsert_competitions`), called from `scripts/create_db.py`.
+4. Upsert the config into `competitions` with `sync_competitions` in `scripts/create_db.py`, using the shared `upsert` helper (`scorecaster/db/upsert.py`).
 
 ## Expected test failures
 

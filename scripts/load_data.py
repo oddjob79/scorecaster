@@ -1,4 +1,9 @@
-"""Download football-data.co.uk CSVs (once, cached in the database) and load them into seasons, teams, matches and odds."""
+"""Download football-data.co.uk CSVs and load them into the database.
+
+Each file is downloaded once and kept in the database, so re-runs read
+from there. Results, stats and odds go into the seasons, teams, matches
+and odds tables.
+"""
 import argparse
 import logging
 
@@ -6,42 +11,96 @@ import requests
 
 import _bootstrap  # noqa: F401
 
-from scorecaster.config import LEAGUES, Settings, current_season_start
+from scorecaster.config import Settings
 from scorecaster.db import Database
-from scorecaster.ingest.download import DownloadCache, list_csv_files
+from scorecaster.ingest.download import DownloadCache
 from scorecaster.ingest.fdcuk import CsvLoader
+from scorecaster.ingest.fdcuk.files import CsvFile, list_csv_files
+from scorecaster.leagues import LEAGUES, current_season_start
 
 log = logging.getLogger("load_data")
 
 
 def main() -> None:
-    """Fetch and load every configured file, optionally narrowed by league and season (--season skips extra leagues)."""
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--refresh", action="store_true", help="re-download files that can still change")
-    parser.add_argument("--league", action="append", help="league code to load, e.g. E0 (repeatable)")
-    parser.add_argument("--season", action="append", type=int,
-                        help="season start year, e.g. 2024 (repeatable); excludes all-seasons files")
-    args = parser.parse_args()
-
+    """Fetch and load every selected file, then log the totals."""
+    args = parse_args()
     db = Database.for_path(Settings.from_env().db_path)
     cache = DownloadCache(db)
-    current = current_season_start()
-    loader = CsvLoader(db, current)
-    files = [f for f in list_csv_files(LEAGUES, current)
-             if (not args.league or f.league.code in args.league)
-             and (not args.season or f.season_start in args.season)]
+    current_season = current_season_start()
+    loader = CsvLoader(db, current_season)
 
+    files = select_files(args.league, args.season, current_season)
     total = 0
     for csv_file in files:
-        try:
-            body = cache.get(csv_file.url, refresh=args.refresh and csv_file.is_live(current))
-        except requests.HTTPError as exc:
-            if exc.response.status_code == 404 and csv_file.season_start == current:
-                log.info("not published yet, skipped: %s", csv_file.url)
-                continue
-            raise
-        total += loader.load(csv_file, body)
+        body = fetch(cache, csv_file, args.refresh, current_season)
+        if body is not None:
+            total += loader.load(csv_file, body)
     log.info("%d files, %d matches", len(files), total)
+
+
+def parse_args() -> argparse.Namespace:
+    """Read the command-line options."""
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--refresh",
+        action="store_true",
+        help="re-download files that can still change",
+    )
+    parser.add_argument(
+        "--league",
+        action="append",
+        help="league code to load, e.g. E0 (repeatable)",
+    )
+    parser.add_argument(
+        "--season",
+        action="append",
+        type=int,
+        help="season start year, e.g. 2024 (repeatable); "
+        "skips the all-seasons extra-league files",
+    )
+    return parser.parse_args()
+
+
+def select_files(
+    leagues: list[str] | None,
+    seasons: list[int] | None,
+    current_season: int,
+) -> list[CsvFile]:
+    """Return the configured files, narrowed to the given leagues and seasons.
+
+    No leagues or seasons means all of them. Giving seasons leaves out the
+    all-seasons files, since they can't be narrowed to one season.
+    """
+    files = list_csv_files(LEAGUES, current_season)
+    if leagues:
+        files = [f for f in files if f.league.code in leagues]
+    if seasons:
+        files = [f for f in files if f.season_start in seasons]
+    return files
+
+
+def fetch(
+    cache: DownloadCache,
+    csv_file: CsvFile,
+    refresh: bool,
+    current_season: int,
+) -> bytes | None:
+    """Return a file's body, or None if the current season isn't out yet.
+
+    The site publishes a new season's file a few weeks into the season, so
+    a 404 for the season in progress is expected. Any other error stops
+    the run.
+    """
+    try:
+        if refresh and csv_file.is_live(current_season):
+            return cache.refresh(csv_file.url)
+        return cache.get(csv_file.url)
+    except requests.HTTPError as error:
+        is_missing = error.response.status_code == 404
+        if is_missing and csv_file.season_start == current_season:
+            log.info("not published yet, skipped: %s", csv_file.url)
+            return None
+        raise
 
 
 if __name__ == "__main__":

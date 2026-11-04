@@ -4,15 +4,15 @@ from __future__ import annotations
 from datetime import date, datetime, time
 
 from sqlalchemy import (
-    Date, 
-    DateTime, 
-    Float, 
-    ForeignKey, 
-    Integer, 
-    LargeBinary, 
-    String, 
+    Date,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    LargeBinary,
+    String,
     Time,
-    UniqueConstraint
+    UniqueConstraint,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -22,6 +22,8 @@ class Base(DeclarativeBase):
 
 
 class Competition(Base):
+    """A league, e.g. E0 (Premier League, England, tier 1)."""
+
     __tablename__ = "competitions"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -32,10 +34,14 @@ class Competition(Base):
 
 
 class Season(Base):
+    """One season of a competition, e.g. 2024/25 or calendar year 2024."""
+
     __tablename__ = "seasons"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    competition_id: Mapped[int] = mapped_column(ForeignKey("competitions.id"))
+    competition_id: Mapped[int] = mapped_column(
+        ForeignKey("competitions.id")
+    )
     label: Mapped[str] = mapped_column(String(9))
     start_year: Mapped[int] = mapped_column(Integer, index=True)
     end_year: Mapped[int] = mapped_column(Integer)
@@ -44,6 +50,8 @@ class Season(Base):
 
 
 class Team(Base):
+    """A team, unique by country and the name the site uses."""
+
     __tablename__ = "teams"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -54,7 +62,7 @@ class Team(Base):
 
 
 class TeamAlias(Base):
-    """Alternative spelling of a team name, mapped to the team it belongs to."""
+    """An alternative spelling of a team name, mapped to its team."""
 
     __tablename__ = "team_aliases"
 
@@ -64,16 +72,30 @@ class TeamAlias(Base):
 
 
 class Match(Base):
+    """One match: when, who, the score and the match stats.
+
+    `status` is 'finished', 'scheduled' (not yet played) or 'void' (never
+    played). Stats are empty for leagues and seasons that lack them.
+    """
+
     __tablename__ = "matches"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    competition_id: Mapped[int] = mapped_column(ForeignKey("competitions.id"), index=True)
-    season_id: Mapped[int] = mapped_column(ForeignKey("seasons.id"), index=True)
+    competition_id: Mapped[int] = mapped_column(
+        ForeignKey("competitions.id"), index=True
+    )
+    season_id: Mapped[int] = mapped_column(
+        ForeignKey("seasons.id"), index=True
+    )
     match_date: Mapped[date] = mapped_column(Date, index=True)
     kickoff_time: Mapped[time | None] = mapped_column(Time)
     status: Mapped[str] = mapped_column(String(10), index=True)
-    home_team_id: Mapped[int] = mapped_column(ForeignKey("teams.id"), index=True)
-    away_team_id: Mapped[int] = mapped_column(ForeignKey("teams.id"), index=True)
+    home_team_id: Mapped[int] = mapped_column(
+        ForeignKey("teams.id"), index=True
+    )
+    away_team_id: Mapped[int] = mapped_column(
+        ForeignKey("teams.id"), index=True
+    )
     ft_home: Mapped[int | None] = mapped_column(Integer)
     ft_away: Mapped[int | None] = mapped_column(Integer)
     ft_result: Mapped[str | None] = mapped_column(String(1))
@@ -94,32 +116,47 @@ class Match(Base):
     home_reds: Mapped[int | None] = mapped_column(Integer)
     away_reds: Mapped[int | None] = mapped_column(Integer)
 
-    __table_args__ = (UniqueConstraint("competition_id", "match_date", "home_team_id", "away_team_id"),)
+    __table_args__ = (
+        UniqueConstraint(
+            "competition_id", "match_date", "home_team_id", "away_team_id"
+        ),
+    )
 
     @property
     def is_finished(self) -> bool:
-        """True when the match has a final score."""
-        return self.status == "finished" and self.ft_home is not None and self.ft_away is not None
+        """Return True when the match has a final score."""
+        has_score = self.ft_home is not None and self.ft_away is not None
+        return self.status == "finished" and has_score
 
 
 class Download(Base):
-    """Raw CSV cache so files can be re-parsed without new requests."""
+    """A downloaded file's raw bytes, so it can be re-parsed offline."""
 
     __tablename__ = "downloads"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(
+        Integer, primary_key=True, autoincrement=True
+    )
     url: Mapped[str] = mapped_column(String(255), unique=True)
     fetched_at: Mapped[datetime] = mapped_column(DateTime)
     body: Mapped[bytes] = mapped_column(LargeBinary)
 
 
 class Odds(Base):
-    """One price: bookmaker, market, selection, line and timing for a match. `line` is 0 for 1X2."""
+    """One price for one selection of one match.
+
+    `line` is 0 for 1X2, 2.5 for over/under and the handicap for Asian
+    handicap. `timing` is 'pre_match' or 'closing'.
+    """
 
     __tablename__ = "odds"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    match_id: Mapped[int] = mapped_column(ForeignKey("matches.id"), index=True)
+    id: Mapped[int] = mapped_column(
+        Integer, primary_key=True, autoincrement=True
+    )
+    match_id: Mapped[int] = mapped_column(
+        ForeignKey("matches.id"), index=True
+    )
     bookmaker: Mapped[str] = mapped_column(String(30))
     market: Mapped[str] = mapped_column(String(5))
     selection: Mapped[str] = mapped_column(String(5))
@@ -127,4 +164,8 @@ class Odds(Base):
     timing: Mapped[str] = mapped_column(String(10))
     price: Mapped[float] = mapped_column(Float)
 
-    __table_args__ = (UniqueConstraint("match_id", "bookmaker", "market", "selection", "line", "timing"),)
+    __table_args__ = (
+        UniqueConstraint(
+            "match_id", "bookmaker", "market", "selection", "line", "timing"
+        ),
+    )
