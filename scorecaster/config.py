@@ -28,19 +28,18 @@ def load_dotenv(path: Path) -> None:
 
 @dataclass(frozen=True)
 class FeatureConfig:
-    """Tunable parameters for the pre-match feature builder."""
+    """Tunable parameters for the pre-match feature builder.
+
+    `elo_min_movers` is how many earlier teams must have crossed a
+    division boundary before their average rating shift is used for the
+    next team; `elo_mover_games` is how many games in the new division
+    that shift is measured over.
+    """
 
     form_windows: tuple[int, ...] = (4, 6, 8)
     goal_windows: tuple[int, ...] = (4, 6, 8, 10, 20)
     venue_windows: tuple[int, ...] = (4, 6, 8)
-    position_bands: tuple[tuple[int, int], ...] = (
-        (1, 4),
-        (5, 8),
-        (9, 12),
-        (13, 16),
-        (17, 20),
-    )
-    relegation_places: int = 3
+    position_band_count: int = 5
     h2h_last_n: int = 6
     h2h_venue_last_n: int = 3
     similar_opponent_last_n: int = 10
@@ -49,6 +48,8 @@ class FeatureConfig:
     elo_k: float = 20.0
     elo_home_advantage: float = 60.0
     elo_season_regression: float = 0.2
+    elo_min_movers: int = 5
+    elo_mover_games: int = 10
 
 
 @dataclass(frozen=True)

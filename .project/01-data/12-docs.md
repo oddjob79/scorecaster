@@ -17,7 +17,15 @@ Describe the football-data.co.uk pipeline in the readme and changes log.
    - only "live" files (the season in progress, the extra-league files and the fixtures) can change, and `--refresh` re-downloads just those
    - the two-second pause between downloads, and why
    - a short worked example: first run, second run, weekly refresh
-3. `changes.md`: one entry summarising phase 01.
+3. `readme.md` (or `docs/glossary.md` if long), a **glossary** in direct technical terms (the user asked for this). It covers at least:
+   - Elo: rating, expected score, K, home advantage, goal-difference multiplier, summer regression
+   - per-league Elo, pyramid Elo, and why option B (convert on move) was chosen over option A (shared scale with anchors)
+   - boundary, direction, adjustment, expanding window, fallback seed
+   - finish percentile, first-10 points per game against average (from 05a)
+   - position band (proportional fifths), season phase
+   - odds terms: 1X2, over/under, Asian handicap and its line, pre_match against closing, market average and max, margin
+   - leakage: why every estimate uses only earlier seasons
+4. `changes.md`: one entry summarising phase 01.
 
 ## Expected test failures
 
@@ -27,7 +35,7 @@ None new.
 
 **Core**
 
-- steps 1–3 (ticked as optional at phase level)
+- steps 1–4 (ticked as optional at phase level)
 
 **Optional** (ticked = written)
 
