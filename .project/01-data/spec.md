@@ -60,6 +60,7 @@ Load many seasons of results, match stats and bookmaker odds for every league fo
 | 09a | [Season-phase analysis](09a-season-phase-analysis.md) |
 | 10 | [New feature calculators](10-new-feature-calculators.md) |
 | 11 | [Data-quality report](11-data-quality-report.md) |
+| 11a | [Tests](11a-tests.md) |
 | 12 | [Docs](12-docs.md) |
 
 ## Scope ledger
@@ -89,6 +90,8 @@ Load many seasons of results, match stats and bookmaker odds for every league fo
 - [x] fuzzy team-name hints in the report, confirmed by hand (11)
 - [x] extra leagues with closing odds only (07)
 - [x] readme and changes update (12)
+- [x] test suite: pure-function, contract, data-safety and decision tests (11a)
+- [x] tripwires: Elo division check, schema drift check, calculator key check (11a)
 - [x] 05a extras: spread, previous-finish split, era split
 - [ ] 05a charts (needs matplotlib)
 - [ ] Understat xG scraper (later phase, new loader)

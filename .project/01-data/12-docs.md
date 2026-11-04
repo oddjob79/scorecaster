@@ -6,7 +6,7 @@ Describe the football-data.co.uk pipeline in the readme and changes log.
 
 ## Depends on
 
-01–11
+01–11a
 
 ## Steps
 
@@ -25,7 +25,8 @@ Describe the football-data.co.uk pipeline in the readme and changes log.
    - position band (proportional fifths), season phase
    - odds terms: 1X2, over/under, Asian handicap and its line, pre_match against closing, market average and max, margin
    - leakage: why every estimate uses only earlier seasons
-4. `changes.md`: one entry summarising phase 01.
+4. `readme.md`: how to run the tests (`pytest`) and what the four kinds of test guard.
+5. `changes.md`: one entry summarising phase 01.
 
 ## Expected test failures
 
@@ -35,7 +36,7 @@ None new.
 
 **Core**
 
-- steps 1–4 (ticked as optional at phase level)
+- steps 1–5 (ticked as optional at phase level)
 
 **Optional** (ticked = written)
 
