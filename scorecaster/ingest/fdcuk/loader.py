@@ -126,6 +126,35 @@ class SeasonWriter:
         upsert(self.session, Odds.__table__, odds_rows, ODDS_KEY)
         return len(match_rows), len(odds_rows)
 
+    def without_finished(self, season_df: pd.DataFrame) -> pd.DataFrame:
+        """Return the rows whose match isn't already stored as finished.
+
+        Fixtures files repeat matches from the last day or two. Writing
+        those again would replace a stored result with an empty score.
+        """
+        stored = self.session.execute(
+            select(
+                Match.match_date,
+                Match.home_team_id,
+                Match.away_team_id,
+            ).where(
+                Match.season_id == self.season_id,
+                Match.status == "finished",
+            )
+        )
+        finished = set(stored)
+        is_finished = [
+            (record["Date"], *self._team_ids(record)) in finished
+            for record in season_df.to_dict("records")
+        ]
+        return season_df[[not done for done in is_finished]].copy()
+
+    def _team_ids(self, record: dict) -> tuple[int, int]:
+        """Return the (home, away) team ids for one CSV record."""
+        home_team_id = self.teams.resolve(self.country, record["HomeTeam"])
+        away_team_id = self.teams.resolve(self.country, record["AwayTeam"])
+        return home_team_id, away_team_id
+
     def _find_or_create_season(self, season: SeasonSpan) -> int:
         """Return this competition's season id, creating it if new."""
         row = self.session.scalar(
@@ -147,8 +176,7 @@ class SeasonWriter:
 
     def _match_row(self, record: dict) -> dict:
         """Turn one CSV record into a matches-table row."""
-        home_team_id = self.teams.resolve(self.country, record["HomeTeam"])
-        away_team_id = self.teams.resolve(self.country, record["AwayTeam"])
+        home_team_id, away_team_id = self._team_ids(record)
         row = {
             "competition_id": self.competition_id,
             "season_id": self.season_id,

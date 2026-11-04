@@ -23,6 +23,8 @@ class LeagueConfig(BaseModel, frozen=True):
 
     Main leagues have one file per season (`season`), from `first_season`
     on. Extra leagues have one file holding every season (`all_seasons`).
+    `calendar_year` marks leagues whose seasons run January to December;
+    the rest run August to May.
     """
 
     code: str = Field(min_length=1, max_length=10)
@@ -31,6 +33,7 @@ class LeagueConfig(BaseModel, frozen=True):
     tier: int = Field(ge=1)
     file_style: Literal["season", "all_seasons"]
     first_season: int | None = None
+    calendar_year: bool = False
 
     @model_validator(mode="after")
     def check_first_season(self) -> LeagueConfig:
@@ -59,7 +62,9 @@ def _main_league(
     )
 
 
-def _extra_league(code: str, country: str, name: str) -> LeagueConfig:
+def _extra_league(
+    code: str, country: str, name: str, calendar_year: bool = False
+) -> LeagueConfig:
     """Return an extra league, loaded from one file of every season."""
     return LeagueConfig(
         code=code,
@@ -67,6 +72,7 @@ def _extra_league(code: str, country: str, name: str) -> LeagueConfig:
         name=name,
         tier=1,
         file_style="all_seasons",
+        calendar_year=calendar_year,
     )
 
 
@@ -93,18 +99,18 @@ LEAGUES: tuple[LeagueConfig, ...] = (
     _main_league("P1", "Portugal", "Primeira Liga", 1),
     _main_league("T1", "Turkey", "Süper Lig", 1),
     _main_league("G1", "Greece", "Super League", 1),
-    _extra_league("ARG", "Argentina", "Liga Profesional"),
+    _extra_league("ARG", "Argentina", "Liga Profesional", calendar_year=True),
     _extra_league("AUT", "Austria", "Bundesliga"),
-    _extra_league("BRA", "Brazil", "Série A"),
+    _extra_league("BRA", "Brazil", "Série A", calendar_year=True),
     _extra_league("DNK", "Denmark", "Superliga"),
-    _extra_league("FIN", "Finland", "Veikkausliiga"),
-    _extra_league("IRL", "Ireland", "Premier Division"),
+    _extra_league("FIN", "Finland", "Veikkausliiga", calendar_year=True),
+    _extra_league("IRL", "Ireland", "Premier Division", calendar_year=True),
     _extra_league("JPN", "Japan", "J1 League"),
     _extra_league("MEX", "Mexico", "Liga MX"),
-    _extra_league("NOR", "Norway", "Eliteserien"),
+    _extra_league("NOR", "Norway", "Eliteserien", calendar_year=True),
     _extra_league("POL", "Poland", "Ekstraklasa"),
     _extra_league("ROU", "Romania", "Liga I"),
-    _extra_league("SWE", "Sweden", "Allsvenskan"),
+    _extra_league("SWE", "Sweden", "Allsvenskan", calendar_year=True),
     _extra_league("SWZ", "Switzerland", "Super League"),
-    _extra_league("USA", "USA", "MLS"),
+    _extra_league("USA", "USA", "MLS", calendar_year=True),
 )

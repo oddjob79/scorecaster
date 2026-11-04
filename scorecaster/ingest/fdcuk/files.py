@@ -8,6 +8,12 @@ from scorecaster.leagues import LeagueConfig
 
 BASE_URL = "https://www.football-data.co.uk"
 
+# Upcoming matches with current odds: main leagues, then extra leagues.
+FIXTURES_URLS = (
+    f"{BASE_URL}/fixtures.csv",
+    f"{BASE_URL}/new_league_fixtures.csv",
+)
+
 
 @dataclass(frozen=True)
 class CsvFile:

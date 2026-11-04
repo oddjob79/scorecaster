@@ -2,7 +2,8 @@
 
 Each file is downloaded once and kept in the database, so re-runs read
 from there. Results, stats and odds go into the seasons, teams, matches
-and odds tables.
+and odds tables. An unfiltered run then loads the fixtures files, which
+add upcoming matches as 'scheduled' with their pre-match odds.
 """
 import argparse
 import logging
@@ -15,24 +16,46 @@ from scorecaster.config import Settings
 from scorecaster.db import Database
 from scorecaster.ingest.download import DownloadCache
 from scorecaster.ingest.fdcuk import CsvLoader
-from scorecaster.ingest.fdcuk.files import CsvFile, list_csv_files
+from scorecaster.ingest.fdcuk.files import (
+    FIXTURES_URLS,
+    CsvFile,
+    list_csv_files,
+)
+from scorecaster.ingest.fdcuk.fixtures import FixturesLoader
 from scorecaster.leagues import LEAGUES, current_season_start
 
 log = logging.getLogger("load_data")
 
 
 def main() -> None:
-    """Fetch and load every selected file, then log the totals."""
+    """Load the selected season files, then the fixtures, logging totals.
+
+    Fixtures load on an unfiltered run, or alone with --fixtures-only.
+    """
     args = parse_args()
     db = Database.for_path(Settings.from_env().db_path)
     cache = DownloadCache(db)
+    if not args.fixtures_only:
+        load_season_files(db, cache, args.league, args.season, args.refresh)
+    if args.fixtures_only or not (args.league or args.season):
+        written = load_fixtures(cache, FixturesLoader(db), args.refresh)
+        log.info("%d fixtures", written)
+
+
+def load_season_files(
+    db: Database,
+    cache: DownloadCache,
+    leagues: list[str] | None,
+    seasons: list[int] | None,
+    refresh: bool,
+) -> None:
+    """Fetch and load the selected league-season and extra-league files."""
     current_season = current_season_start()
     loader = CsvLoader(db, current_season)
-
-    files = select_files(args.league, args.season, current_season)
+    files = select_files(leagues, seasons, current_season)
     total = 0
     for csv_file in files:
-        body = fetch(cache, csv_file, args.refresh, current_season)
+        body = fetch(cache, csv_file, refresh, current_season)
         if body is not None:
             total += loader.load(csv_file, body)
     log.info("%d files, %d matches", len(files), total)
@@ -57,6 +80,11 @@ def parse_args() -> argparse.Namespace:
         type=int,
         help="season start year, e.g. 2024 (repeatable); "
         "skips the all-seasons extra-league files",
+    )
+    parser.add_argument(
+        "--fixtures-only",
+        action="store_true",
+        help="load just the two fixtures files",
     )
     return parser.parse_args()
 
@@ -101,6 +129,20 @@ def fetch(
             log.info("not published yet, skipped: %s", csv_file.url)
             return None
         raise
+
+
+def load_fixtures(
+    cache: DownloadCache, loader: FixturesLoader, refresh: bool
+) -> int:
+    """Load both fixtures files, re-downloading them first if refreshing.
+
+    Returns the number of fixtures written.
+    """
+    written = 0
+    for url in FIXTURES_URLS:
+        body = cache.refresh(url) if refresh else cache.get(url)
+        written += loader.load(body, label=url.rsplit("/", 1)[-1])
+    return written
 
 
 if __name__ == "__main__":
