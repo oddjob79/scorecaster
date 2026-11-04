@@ -4,11 +4,35 @@ from __future__ import annotations
 from collections import defaultdict
 from dataclasses import dataclass, replace
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 
 from scorecaster.db import Competition, Database, Match, Season
+from scorecaster.features.market import (
+    MarketProbabilities,
+    market_probabilities,
+)
 
 FEATURE_STATUSES = ("finished", "scheduled")
+
+# Market-average pre-match prices, one row per match. Closing prices are
+# set at kick-off, so they would leak into features and aren't read here.
+MARKET_PRICES = text("""
+    SELECT match_id,
+           MAX(CASE WHEN market = '1X2' AND selection = 'home'
+               THEN price END) AS home,
+           MAX(CASE WHEN market = '1X2' AND selection = 'draw'
+               THEN price END) AS draw,
+           MAX(CASE WHEN market = '1X2' AND selection = 'away'
+               THEN price END) AS away,
+           MAX(CASE WHEN market = 'OU' AND selection = 'over'
+               THEN price END) AS over,
+           MAX(CASE WHEN market = 'OU' AND selection = 'under'
+               THEN price END) AS under
+    FROM odds
+    WHERE bookmaker = 'market_avg' AND timing = 'pre_match'
+      AND (market = '1X2' OR (market = 'OU' AND line = 2.5))
+    GROUP BY match_id
+""")
 
 
 @dataclass(frozen=True)
@@ -46,6 +70,17 @@ class MatchSource:
         )
         with self.db.session() as session:
             return list(session.scalars(query))
+
+    def market(self) -> dict[int, MarketProbabilities]:
+        """Return each match's market-average pre-match probabilities."""
+        with self.db.engine.connect() as connection:
+            rows = connection.execute(MARKET_PRICES)
+            return {
+                row.match_id: market_probabilities(
+                    row.home, row.draw, row.away, row.over, row.under
+                )
+                for row in rows
+            }
 
     def seasons(self) -> dict[int, SeasonInfo]:
         """Return every season's facts, keyed by season id."""

@@ -11,20 +11,33 @@ from datetime import date
 
 from scorecaster.config import FeatureConfig
 from scorecaster.db import Match
-from scorecaster.features.history import TeamHistory, TeamMatchRecord
+from scorecaster.features.history import (
+    MatchStats,
+    TeamHistory,
+    TeamMatchRecord,
+)
+from scorecaster.features.market import MarketProbabilities
 from scorecaster.features.pyramid import PyramidElo
 from scorecaster.features.source import SeasonInfo
 from scorecaster.features.table import LeagueTable, band_of
 
 
 class LeagueState:
-    """Histories, league tables and Elo, as of the start of a day."""
+    """Histories, league tables and Elo, as of the start of a day.
+
+    `market` holds each match's pre-match market probabilities, which are
+    known before kick-off and so safe to read for that match.
+    """
 
     def __init__(
-        self, cfg: FeatureConfig, seasons: dict[int, SeasonInfo]
+        self,
+        cfg: FeatureConfig,
+        seasons: dict[int, SeasonInfo],
+        market: dict[int, MarketProbabilities] | None = None,
     ) -> None:
         self.cfg = cfg
         self.seasons = seasons
+        self.market = market or {}
         self.histories: dict[int, TeamHistory] = defaultdict(TeamHistory)
         self.tables: dict[int, LeagueTable] = {}
         self.elo = PyramidElo(cfg)
@@ -115,7 +128,13 @@ class LeagueState:
             (match.away_team_id, match.home_team_id, match.ft_away,
              match.ft_home, False),
         )
+        home_stats, away_stats = _match_stats(match)
+        stats = {
+            match.home_team_id: (home_stats, away_stats),
+            match.away_team_id: (away_stats, home_stats),
+        }
         for team_id, opponent_id, gf, ga, is_home in sides:
+            stats_for, stats_against = stats[team_id]
             self.histories[team_id].add(
                 TeamMatchRecord(
                     match_id=match.id,
@@ -126,6 +145,8 @@ class LeagueState:
                     gf=gf,
                     ga=ga,
                     opponent_band=bands_before[(match.id, opponent_id)],
+                    stats_for=stats_for,
+                    stats_against=stats_against,
                 )
             )
 
@@ -175,6 +196,27 @@ class MatchContext:
     def table(self) -> LeagueTable:
         """Return the season's table so far."""
         return self.state.table(self.season_id)
+
+
+def _match_stats(match: Match) -> tuple[MatchStats, MatchStats]:
+    """Return the (home, away) match stats from a stored match."""
+    home = MatchStats(
+        shots=match.home_shots,
+        shots_on_target=match.home_shots_on_target,
+        corners=match.home_corners,
+        fouls=match.home_fouls,
+        yellows=match.home_yellows,
+        reds=match.home_reds,
+    )
+    away = MatchStats(
+        shots=match.away_shots,
+        shots_on_target=match.away_shots_on_target,
+        corners=match.away_corners,
+        fouls=match.away_fouls,
+        yellows=match.away_yellows,
+        reds=match.away_reds,
+    )
+    return home, away
 
 
 def safe_div(numerator: float, denominator: float) -> float | None:

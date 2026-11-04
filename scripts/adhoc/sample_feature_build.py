@@ -1,7 +1,8 @@
 """Build features for a few leagues in a throwaway in-memory database.
 
-Copies the chosen leagues' matches (and every competition and team) from
-the real database, opened read-only, into memory, runs the feature
+Copies the chosen leagues' matches and their market-average pre-match
+odds (and every competition and team) from the real database, opened
+read-only, into memory, runs the feature
 builder there, then reports timing, row counts, columns that are mostly
 empty, and one team's rows. Nothing is written to the real database.
 
@@ -16,7 +17,14 @@ import pandas as pd
 import _bootstrap  # noqa: F401
 
 from scorecaster.config import FeatureConfig, Settings
-from scorecaster.db import Competition, Database, Match, Season, Team
+from scorecaster.db import (
+    Competition,
+    Database,
+    Match,
+    Odds,
+    Season,
+    Team,
+)
 from scorecaster.features.builder import FeatureBuilder
 from scorecaster.features.schema import TABLE_NAME
 
@@ -25,6 +33,7 @@ SHOWN_COLUMNS = [
     "match_date", "is_home", "goals_for", "goals_against",
     "season_phase", "league_position", "position_band",
     "elo", "elo_expected", "form_6_pts",
+    "market_win_prob", "stats_6_shots_for_pg",
 ]
 
 
@@ -62,7 +71,11 @@ def parse_args() -> argparse.Namespace:
 
 
 def copy_leagues(memory: Database, codes: list[str]) -> int:
-    """Copy competitions, teams, and the leagues' seasons and matches."""
+    """Copy everything a feature build reads for the chosen leagues.
+
+    All competitions and teams; the leagues' seasons and matches; and
+    those matches' market-average pre-match odds.
+    """
     source_uri = f"file:{Settings.from_env().db_path}?mode=ro"
     marks = ", ".join("?" for _ in codes)
     league_filter = (
@@ -85,6 +98,13 @@ def copy_leagues(memory: Database, codes: list[str]) -> int:
                 source,
                 params=codes,
                 parse_dates=["match_date"],
+            ),
+            Odds: pd.read_sql_query(
+                "SELECT o.* FROM odds o JOIN matches m ON m.id = o.match_id "
+                f"WHERE m.{league_filter} AND o.bookmaker = 'market_avg' "
+                "AND o.timing = 'pre_match'",
+                source,
+                params=codes,
             ),
         }
     matches_df = tables[Match]

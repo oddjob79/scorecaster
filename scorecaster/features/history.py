@@ -7,11 +7,29 @@ from typing import Callable
 
 
 @dataclass(frozen=True)
+class MatchStats:
+    """One side's match stats; a value is None when the file lacks it."""
+
+    shots: int | None = None
+    shots_on_target: int | None = None
+    corners: int | None = None
+    fouls: int | None = None
+    yellows: int | None = None
+    reds: int | None = None
+
+
+STAT_NAMES = (
+    "shots", "shots_on_target", "corners", "fouls", "yellows", "reds"
+)
+
+
+@dataclass(frozen=True)
 class TeamMatchRecord:
     """One finished match from one team's side.
 
     `opponent_band` is the opponent's position band just before the match,
-    used for the record against similar opponents.
+    used for the record against similar opponents. `stats_for` and
+    `stats_against` are this team's and the opponent's match stats.
     """
 
     match_id: int
@@ -22,6 +40,8 @@ class TeamMatchRecord:
     gf: int
     ga: int
     opponent_band: int | None
+    stats_for: MatchStats = MatchStats()
+    stats_against: MatchStats = MatchStats()
 
     @property
     def points(self) -> int:

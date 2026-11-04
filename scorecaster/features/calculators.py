@@ -10,7 +10,7 @@ from math import ceil
 from typing import Callable
 
 from scorecaster.config import FeatureConfig
-from scorecaster.features.history import TeamMatchRecord
+from scorecaster.features.history import STAT_NAMES, TeamMatchRecord
 from scorecaster.features.state import MatchContext, safe_div
 
 Features = dict[str, float | int | None]
@@ -367,6 +367,67 @@ class SimilarOpponentCalculator(FeatureCalculator):
         }
 
 
+class StatsCalculator(FeatureCalculator):
+    """Match stats per game, for and against, over the last N games.
+
+    Shots, shots on target, corners, fouls, yellows and reds. A window is
+    empty unless every game in it has that stat, so leagues and seasons
+    without stats never produce part-filled averages.
+    """
+
+    def __init__(self, windows: tuple[int, ...]) -> None:
+        self.windows = windows
+
+    def columns(self) -> list[str]:
+        return [
+            f"stats_{n}_{stat}_{side}_pg"
+            for n in self.windows
+            for stat in STAT_NAMES
+            for side in ("for", "against")
+        ]
+
+    def compute(self, ctx: MatchContext) -> Features:
+        features: Features = {}
+        for n in self.windows:
+            records = ctx.history.last(n)
+            for stat in STAT_NAMES:
+                for side in ("for", "against"):
+                    name = f"stats_{n}_{stat}_{side}_pg"
+                    features[name] = _stat_average(records, n, stat, side)
+        return features
+
+
+class OddsCalculator(FeatureCalculator):
+    """The market's pre-match view of this match, from this team's side.
+
+    Probabilities come from the market-average pre-match odds with the
+    margin removed. They were set before kick-off, so they don't leak.
+    """
+
+    def columns(self) -> list[str]:
+        return [
+            "market_win_prob",
+            "market_draw_prob",
+            "market_loss_prob",
+            "market_over25_prob",
+        ]
+
+    def compute(self, ctx: MatchContext) -> Features:
+        market = ctx.state.market.get(ctx.match.id)
+        if market is None:
+            return dict.fromkeys(self.columns())
+        if ctx.is_home:
+            win, loss = market.home, market.away
+        else:
+            win, loss = market.away, market.home
+        return {
+            "market_win_prob": win,
+            "market_draw_prob": market.draw,
+            "market_loss_prob": loss,
+            "market_over25_prob": market.over_2_5,
+        }
+
+
 def default_calculators(cfg: FeatureConfig) -> list[FeatureCalculator]:
     """Return the standard calculator set used by the feature builder."""
     return [
@@ -384,6 +445,8 @@ def default_calculators(cfg: FeatureConfig) -> list[FeatureCalculator]:
         StrengthCalculator(cfg),
         HeadToHeadCalculator(cfg.h2h_last_n, cfg.h2h_venue_last_n),
         SimilarOpponentCalculator(cfg.similar_opponent_last_n),
+        StatsCalculator(cfg.form_windows),
+        OddsCalculator(),
     ]
 
 
@@ -417,6 +480,24 @@ def _totals(
         f"{prefix}_{name}": values[name] if records else None
         for name in names
     }
+
+
+def _stat_average(
+    records: list[TeamMatchRecord], window: int, stat: str, side: str
+) -> float | None:
+    """Return a stat's per-game average over a full window, else None.
+
+    `side` is 'for' (this team) or 'against' (its opponents).
+    """
+    if len(records) < window:
+        return None
+    values = [
+        getattr(getattr(record, f"stats_{side}"), stat)
+        for record in records
+    ]
+    if any(value is None for value in values):
+        return None
+    return sum(values) / window
 
 
 def _latest(records: list[TeamMatchRecord]) -> TeamMatchRecord | None:

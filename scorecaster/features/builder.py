@@ -81,7 +81,9 @@ class FeatureBuilder:
     def _replay(self) -> BuildStats:
         """Replay every match day, writing rows in batches."""
         final_ids = self._final_match_ids()
-        state = LeagueState(self.cfg, self.source.seasons())
+        state = LeagueState(
+            self.cfg, self.source.seasons(), self.source.market()
+        )
         matches = self.source.matches()
         self._purge_stale({match.id for match in matches})
 
