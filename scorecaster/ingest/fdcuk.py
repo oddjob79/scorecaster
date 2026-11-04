@@ -4,18 +4,20 @@ from __future__ import annotations
 import io
 import logging
 import re
+from datetime import date
 
 import pandas as pd
 from sqlalchemy import select
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from sqlalchemy.orm import Session
 
+from scorecaster.config import LeagueConfig
 from scorecaster.db import Competition, Database, Match, Odds, Season, Team, TeamAlias
 from scorecaster.ingest.download import CsvFile
 
 log = logging.getLogger(__name__)
 
-OLD_NAMES = {"HG": "FTHG", "AG": "FTAG", "Res": "FTR"}
+OLD_NAMES = {"HG": "FTHG", "AG": "FTAG", "Res": "FTR", "Home": "HomeTeam", "Away": "AwayTeam"}
 REQUIRED_COLUMNS = ["Date", "HomeTeam", "AwayTeam"]
 NUMBER_COLUMNS = {
     "FTHG": "ft_home", "FTAG": "ft_away", "HTHG": "ht_home", "HTAG": "ht_away",
@@ -40,7 +42,10 @@ _SELECTION_RE = r"(C?)(AHH|AHA|>2\.5|<2\.5|H|D|A)$"
 ODDS_PATTERN = re.compile(r"^(BbAv|BbMx|B365|BFE|Avg|Max|PS|P)" + _SELECTION_RE)
 SKIPPED_PATTERN = re.compile(rf"^({'|'.join(SKIPPED_SOURCES)})" + _SELECTION_RE)
 AH_LINE_COLUMNS = {"pre_match": ["AHh", "BbAHh"], "closing": ["AHCh"]}
-OTHER_COLUMNS = {"Div", "Time", "Bb1X2", "BbOU", "BbAH", "BbAHh", "AHh", "AHCh", "HxG", "AxG", "HFKC", "AFKC"}
+OTHER_COLUMNS = {
+    "Div", "Time", "Country", "League", "Season",
+    "Bb1X2", "BbOU", "BbAH", "BbAHh", "AHh", "AHCh", "HxG", "AxG", "HFKC", "AFKC",
+}
 ODDS_KEY = ["match_id", "bookmaker", "market", "selection", "line", "timing"]
 
 
@@ -71,7 +76,7 @@ def to_numbers(results_df: pd.DataFrame, columns: list[str], label: str) -> None
 
 
 def read_results(body: bytes, label: str) -> pd.DataFrame:
-    """Read a main-league CSV into one row per match with dates parsed and numbers converted."""
+    """Read a football-data.co.uk CSV into one row per match with dates parsed and numbers converted."""
     text = decode_csv(body)
     width = len(text.splitlines()[0].split(","))
 
@@ -99,6 +104,18 @@ def read_results(body: bytes, label: str) -> pd.DataFrame:
 def season_label(start_year: int) -> str:
     """Return the label for a season starting in `start_year`: 2024 -> '2024/25'."""
     return f"{start_year}/{(start_year + 1) % 100:02d}"
+
+
+def parse_season(value: str) -> tuple[str, int, int]:
+    """Return (label, start, end) for an extra-league Season value.
+
+    '2012/2013' -> ('2012/13', 2012, 2013); '2024' -> ('2024', 2024, 2024)
+    """
+    parts = str(value).strip().split("/")
+    start = int(parts[0])
+    if len(parts) == 1:
+        return str(start), start, start
+    return season_label(start), start, int(parts[1])
 
 
 def unknown_columns(columns: list[str]) -> list[str]:
@@ -161,25 +178,42 @@ class TeamResolver:
         return self.ids[key]
 
 
-class MainLeagueLoader:
-    """Load a main-league season CSV into seasons, teams, matches and odds, updating rows that already exist."""
+class CsvLoader:
+    """Load a football-data.co.uk CSV into seasons, teams, matches and odds, updating rows that already exist."""
 
-    def __init__(self, db: Database, current_season: int) -> None:
+    def __init__(self, db: Database, current_season: int, current_year: int | None = None) -> None:
         self.db = db
         self.current_season = current_season
+        self.current_year = current_year or date.today().year
 
     def load(self, csv_file: CsvFile, body: bytes) -> int:
-        """Parse and upsert one league-season file. Returns the number of matches written."""
-        league, start = csv_file.league, csv_file.season_start
-        label = f"{league.code} {season_label(start)}"
-        results_df = read_results(body, label)
+        """Parse and upsert one file: a league-season, or every season of an extra league. Returns matches written."""
+        league = csv_file.league
+        if csv_file.season_start is not None:
+            start = csv_file.season_start
+            results_df = read_results(body, f"{league.code} {season_label(start)}")
+            seasons = [(season_label(start), start, start + 1, results_df)]
+        else:
+            results_df = read_results(body, league.code)
+            seasons = [(*parse_season(value), season_df.copy())
+                       for value, season_df in results_df.groupby("Season", sort=False)]
+        unknown = unknown_columns(list(results_df.columns))
+        if unknown:
+            log.warning("%s: unknown columns %s", league.code, ", ".join(unknown))
+        return sum(self._load_season(league, *season) for season in seasons)
+
+    def _load_season(self, league: LeagueConfig, label: str, start: int, end: int,
+                     season_df: pd.DataFrame) -> int:
+        """Upsert one season's matches and odds. Unscored matches are scheduled in the current season, else void."""
+        log_label = f"{league.code} {label}"
+        is_current = start == (self.current_season if end > start else self.current_year)
         with self.db.session() as s:
             competition_id = s.scalar(select(Competition.id).where(Competition.code == league.code))
-            season_id = self._season_id(s, competition_id, start)
+            season_id = self._season_id(s, competition_id, label, start, end)
             teams = TeamResolver(s)
-            unplayed = "scheduled" if start == self.current_season else "void"
+            unplayed = "scheduled" if is_current else "void"
             rows = [self._match_row(r, competition_id, season_id, league.country, teams, unplayed)
-                    for r in results_df.to_dict("records")]
+                    for r in season_df.to_dict("records")]
             if rows:
                 stmt = sqlite_insert(Match.__table__)
                 stmt = stmt.on_conflict_do_update(
@@ -187,16 +221,13 @@ class MainLeagueLoader:
                     set_={c: stmt.excluded[c] for c in rows[0] if c not in MATCH_KEY},
                 )
                 s.connection().execute(stmt, rows)
-            odds = build_odds_rows(results_df, self._match_ids(s, season_id, rows), label)
+            odds = build_odds_rows(season_df, self._match_ids(s, season_id, rows), log_label)
             if odds:
                 stmt = sqlite_insert(Odds.__table__)
                 stmt = stmt.on_conflict_do_update(index_elements=ODDS_KEY, set_={"price": stmt.excluded.price})
                 s.connection().execute(stmt, odds)
-        unknown = unknown_columns(list(results_df.columns))
-        if unknown:
-            log.warning("%s: unknown columns %s", label, ", ".join(unknown))
-        missing = [c for c in [*NUMBER_COLUMNS, *TEXT_COLUMNS] if c not in results_df]
-        log.info("%s: %d matches, %d odds%s", label, len(rows), len(odds),
+        missing = [c for c in [*NUMBER_COLUMNS, *TEXT_COLUMNS] if c not in season_df]
+        log.info("%s: %d matches, %d odds%s", log_label, len(rows), len(odds),
                  f"; no {', '.join(missing)}" if missing else "")
         return len(rows)
 
@@ -209,11 +240,10 @@ class MainLeagueLoader:
         return [ids[(r["match_date"], r["home_team_id"], r["away_team_id"])] for r in rows]
 
     @staticmethod
-    def _season_id(s: Session, competition_id: int, start: int) -> int:
-        label = season_label(start)
+    def _season_id(s: Session, competition_id: int, label: str, start: int, end: int) -> int:
         season = s.scalar(select(Season).where(Season.competition_id == competition_id, Season.label == label))
         if season is None:
-            season = Season(competition_id=competition_id, label=label, start_year=start, end_year=start + 1)
+            season = Season(competition_id=competition_id, label=label, start_year=start, end_year=end)
             s.add(season)
             s.flush()
         return season.id
