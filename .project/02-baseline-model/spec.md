@@ -20,6 +20,12 @@ A simple, well-known goals model that gives a probability for every goal market 
   - Brier score: mean squared error of the probabilities
   - calibration: do 60% predictions come true about 60% of the time?
 
+## Inputs from phase 01
+
+- **Leave playoff matches out of training and evaluation**, keeping them in Elo and the tables. Use the rules in `scripts/adhoc/playoff_analysis.py`: cross-tier (a team with 4 or fewer games that season) and post-season (more than 7 days after the median team's last match). That is 439 matches, 0.2% of the data. Extra rounds (Scotland's split, group stages) are regular league play and stay in.
+- **Per-phase evaluation** (chunk 09a): report calibration and log-loss per season phase alongside the market; shrink phase 1 toward base rates only if the model lags the market there.
+- **Benchmark source** changes partway through 2025/26, when Pinnacle stops: Betfair Exchange closing, then market average closing, stored with the source.
+
 ## Open questions
 
 - Fit one model per league, or one across leagues with league-level home advantage?
