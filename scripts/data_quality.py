@@ -11,7 +11,7 @@ two; it runs offline.
 import difflib
 import logging
 import sqlite3
-from datetime import date
+from datetime import date, timedelta
 
 import pandas as pd
 
@@ -24,13 +24,16 @@ from scorecaster.ingest.fdcuk.reader import read_results, to_numbers
 from scorecaster.leagues import LEAGUES
 
 MID_SEASON_DAYS = 30
+PLAYOFF_ONLY_GAMES = 4  # a season this short is a playoff tie, not a season
+STALE_GRACE_DAYS = 7
 NAME_SIMILARITY = 0.75
 MISSING_SHARE = 0.05
 PINNACLE_SEASONS = range(2012, 2026)  # Pinnacle closing odds exist here
 
 TEAM_SEASONS = """
     SELECT c.code, c.country, s.id AS season_id, s.label, s.start_year,
-           t.name AS team, MIN(side.match_date) AS first_match,
+           t.name AS team, COUNT(*) AS games,
+           MIN(side.match_date) AS first_match,
            MAX(side.match_date) AS last_match
     FROM (
         SELECT season_id, competition_id, match_date,
@@ -112,29 +115,23 @@ def report_split_teams(
 
     Both can mean one club stored under two spellings. Each flagged team
     gets the most similar names in its country as alias hints, to confirm
-    by hand; nothing is merged automatically.
+    by hand; nothing is merged automatically. Teams that only played a
+    playoff tie in a season are listed separately.
     """
     team_seasons_df = team_seasons_df.copy()
     for column in ("first_match", "last_match"):
         team_seasons_df[column] = pd.to_datetime(team_seasons_df[column])
-    season_span = team_seasons_df.groupby("season_id").agg(
-        season_first=("first_match", "min"),
-        season_last=("last_match", "max"),
-    )
-    spans_df = team_seasons_df.join(season_span, on="season_id")
-    gap = pd.Timedelta(days=MID_SEASON_DAYS)
-    late_start = spans_df["first_match"] > spans_df["season_first"] + gap
-    early_stop = spans_df["last_match"] < spans_df["season_last"] - gap
-    current = spans_df.groupby("code")["start_year"].transform("max")
-    is_current = spans_df["start_year"] == current
-    mid_season_df = spans_df[late_start | (early_stop & ~is_current)]
+    playoff_only = team_seasons_df["games"] <= PLAYOFF_ONLY_GAMES
+    league_df = team_seasons_df[~playoff_only]
+    playoff_df = team_seasons_df[playoff_only]
 
-    seasons_per_team = team_seasons_df.groupby(["country", "team"]).size()
+    mid_season_df = _mid_season(league_df)
+    seasons_per_team = league_df.groupby(["country", "team"]).size()
     one_season = seasons_per_team[seasons_per_team == 1].index
+    names_by_country = teams_df.groupby("country")["name"].apply(list)
 
     _section(f"Split teams: {len(mid_season_df)} mid-season starts or "
              f"stops, {len(one_season)} one-season teams")
-    names_by_country = teams_df.groupby("country")["name"].apply(list)
     for row in mid_season_df.itertuples():
         hints = _alias_hints(row.team, names_by_country[row.country])
         print(f"  {row.code} {row.label}: {row.team} "
@@ -144,17 +141,46 @@ def report_split_teams(
         hints = _alias_hints(team, names_by_country[country])
         print(f"  one season only: {country} {team}{hints}")
 
+    _section(f"Playoff-only appearances: {len(playoff_df)} (counted as "
+             f"league matches)")
+    for row in playoff_df.itertuples():
+        print(f"  {row.code} {row.label}: {row.team}, {row.games} games "
+              f"{row.first_match:%Y-%m-%d} to {row.last_match:%Y-%m-%d}")
+
+
+def _mid_season(league_df: pd.DataFrame) -> pd.DataFrame:
+    """Return team-seasons starting or stopping well away from the norm.
+
+    A season's typical start and end are its median team's first and last
+    match, so playoff rounds after the regular season don't stretch it.
+    The season in progress isn't checked for early stops.
+    """
+    typical = league_df.groupby("season_id").agg(
+        typical_first=("first_match", "median"),
+        typical_last=("last_match", "median"),
+    )
+    spans_df = league_df.join(typical, on="season_id")
+    gap = pd.Timedelta(days=MID_SEASON_DAYS)
+    late_start = spans_df["first_match"] > spans_df["typical_first"] + gap
+    early_stop = spans_df["last_match"] < spans_df["typical_last"] - gap
+    latest = spans_df.groupby("code")["start_year"].transform("max")
+    in_progress = spans_df["start_year"] == latest
+    return spans_df[late_start | (early_stop & ~in_progress)]
+
 
 def report_stale_fixtures(connection: sqlite3.Connection) -> None:
-    """Print matches still scheduled with a date before today.
+    """Print matches still scheduled more than a week after their date.
 
     These are usually postponed fixtures whose result was loaded under a
-    new date, leaving the old row behind.
+    new date, leaving the old row behind. Recent ones are skipped, since
+    their results may just not be downloaded yet.
     """
+    cutoff = date.today() - timedelta(days=STALE_GRACE_DAYS)
     stale_df = pd.read_sql_query(
-        STALE_FIXTURES, connection, params=(date.today().isoformat(),)
+        STALE_FIXTURES, connection, params=(cutoff.isoformat(),)
     )
-    _section(f"Stale fixtures: {len(stale_df)}")
+    _section(f"Stale fixtures (over {STALE_GRACE_DAYS} days): "
+             f"{len(stale_df)}")
     for row in stale_df.itertuples():
         print(f"  {row.code} {row.match_date}: {row.home} v {row.away}")
 
@@ -222,8 +248,10 @@ def report_unconverted_values(connection: sqlite3.Connection) -> None:
     rows dropped for holding extra data. Runs offline from the cache.
     """
     capture = _WarningCapture()
-    logging.getLogger("scorecaster.ingest.fdcuk").addHandler(capture)
-    logging.getLogger("scorecaster.ingest.fdcuk").setLevel(logging.WARNING)
+    ingest_log = logging.getLogger("scorecaster.ingest.fdcuk")
+    ingest_log.addHandler(capture)
+    ingest_log.setLevel(logging.WARNING)
+    ingest_log.propagate = False  # print once, in this section
     downloads = connection.execute(
         "SELECT url, body FROM downloads WHERE url LIKE '%.csv'"
     ).fetchall()

@@ -34,3 +34,19 @@ None new.
 **Optional** (ticked = written)
 
 - [x] fuzzy alias hints
+
+## Refinements after the first run (2026-11-05)
+
+- Mid-season checks compare each team with its season's **median** first and last match, so playoff rounds don't stretch the season and flag every team.
+- Teams with **4 or fewer** games in a season go in a separate **playoff-only appearances** section.
+- Stale fixtures are flagged only **more than 7 days** after their date.
+- Unconverted-value warnings print once, inside their section.
+
+## Result (2026-11-05)
+
+First run findings:
+- **Spelling splits merged** with `scripts/adhoc/merge_teams.py` (matches re-pointed, alias added, variant team deleted, features rebuilt): Colon Santa FE → Colon Santa Fe, Ham-Kam → HamKam, Gornik Z. → Gornik Zabrze, Din. Bucuresti → Dinamo Bucuresti, U Craiova → Univ. Craiova (U Craiova 1948 is a different club), Osters → Oster (Östersunds FK is a different club), Leonesa → Cultural Leonesa, Telford United → AFC Telford United.
+- **Extra-league files include promotion and relegation playoff ties** against lower-division teams (e.g. Dinamo Bucuresti v FC Argeș 2023, Ull/Kisa in Norway 2012). They count as league matches in tables and Elo.
+- **Pinnacle closing odds stop partway through 2025/26** (45–77% missing per league that season), and never covered SC2/SC3 in 2012/13–2015/16.
+- The 14 "stale" fixtures were the 3 Nov round, awaiting a `--refresh`.
+- No duplicate matches. The 14 unconverted values are the known ones.
