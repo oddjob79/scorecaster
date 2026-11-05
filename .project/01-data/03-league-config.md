@@ -15,15 +15,15 @@ List every league and season to load in one validated config, and write it into 
   - Scotland: SC0, SC1, SC2, SC3
   - Germany D1, D2 · Italy I1, I2 · Spain SP1, SP2 · France F1, F2
   - N1, B1, P1, T1, G1
-- **Extra leagues**, one CSV holding every season (`new/{code}.csv`): every code the site lists, e.g. BRA, ARG, USA, MEX, JPN, CHN, IRL, AUT, SWZ, POL, ROU, RUS, DNK, FIN, NOR, SWE. The exact list comes from the site's data page.
-- Per league: code, country, name, tier, file style (`season` / `all_seasons`), relegation places (fallback for the season in progress, see chunk 09).
+- **Extra leagues**, one CSV holding every season (`new/{code}.csv`): ARG, AUT, BRA, DNK, FIN, IRL, JPN, MEX, NOR, POL, ROU, SWE, SWZ, USA. RUS and CHN are excluded as not reliably bettable in the UK. The codes are unconfirmed until chunk 04's first fetch.
+- Per league: code, country, name, tier, file style (`season` / `all_seasons`), first season.
 
 ## Steps
 
 1. Ask the user to add `pydantic` to `requirements.txt` and install it into the `scorecaster` pyenv virtualenv.
-2. Add a pydantic `LeagueConfig` model in `scorecaster/config.py`, with tier ≥ 1, relegation places ≥ 0, file style one of the two values, and start season no later than the current season.
-3. Write the league list as a module-level constant beside it.
-4. Upsert the config into `competitions` from `scripts/create_db.py`.
+2. Add a pydantic `LeagueConfig` model in `scorecaster/leagues.py`, with tier ≥ 1, file style one of the two values, and start season no later than the current season.
+3. Write the league list as a module-level constant `LEAGUES` beside it, with `current_season_start()` for the season in progress.
+4. Upsert the config into `competitions` with `sync_competitions` in `scripts/create_db.py`, using the shared `upsert` helper (`scorecaster/db/upsert.py`).
 
 ## Expected test failures
 
@@ -33,7 +33,7 @@ None new.
 
 **Core**
 
-- league list with code, country, name, tier, file style, relegation places
+- league list with code, country, name, tier, file style, first season
 - upsert into `competitions`
 
 **Optional** (ticked = written)

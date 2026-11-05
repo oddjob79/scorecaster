@@ -14,11 +14,11 @@ All in `scorecaster/db/models.py`.
 
 | Table | Columns | Unique key |
 |---|---|---|
-| `competitions` | id, code (`E0`, `BRA`), country, name, tier, relegation_places | code |
+| `competitions` | id, code (`E0`, `BRA`), country, name, tier | code |
 | `seasons` | id, competition_id, label (`2024/25` or `2024`), start_year, end_year | competition_id, label |
 | `teams` | id, country, name | country, name |
 | `team_aliases` | country, alias, team_id | country, alias |
-| `matches` | id, competition_id, season_id, match_date, kickoff_time, status (`finished` / `scheduled`), home_team_id, away_team_id, ft_home, ft_away, ft_result, ht_home, ht_away, ht_result, referee, home/away shots, shots on target, fouls, corners, yellows, reds | competition_id, match_date, home_team_id, away_team_id |
+| `matches` | id, competition_id, season_id, match_date, kickoff_time, status (`finished` / `scheduled` / `void`), home_team_id, away_team_id, ft_home, ft_away, ft_result, ht_home, ht_away, ht_result, referee, home/away shots, shots on target, fouls, corners, yellows, reds | competition_id, match_date, home_team_id, away_team_id |
 | `downloads` | id, url, fetched_at, body (bytes) | url |
 | `odds` | id, match_id, bookmaker, market (`1X2` / `OU` / `AH`), selection (`home` / `draw` / `away` / `over` / `under`), line, timing (`pre_match` / `closing`), price | match_id, bookmaker, market, selection, line, timing |
 
@@ -27,14 +27,14 @@ Notes:
 - `matches` holds the stats as columns, empty for leagues and seasons without them.
 - The `matches` unique key lets a re-run update rows in place, and lets a fixture become a result when its score arrives.
 - `downloads.body` is raw bytes: co.uk files mix encodings, so the parser decodes them.
-- `odds.line` is empty for 1X2, `2.5` for over/under, and the handicap for Asian handicap (e.g. `-0.5` home, `0.5` away).
+- `odds.line` is `0` for 1X2, `2.5` for over/under, and the handicap for Asian handicap (e.g. `-0.5` home, `0.5` away). It is never NULL, because SQLite treats NULLs as distinct in a unique constraint, which would let duplicate 1X2 rows in.
 
 ## Steps
 
 1. Replace `Area`, `Competition`, `Season`, `Team`, `SeasonTeam` and `Match` with the tables above.
 2. Add `TeamAlias`, `Download` and `Odds`.
 3. Update the exports in `scorecaster/db/__init__.py`.
-4. Point `scripts/create_db.py` at the new models.
+4. `scripts/create_db.py` creates every table on `Base`, so it picks up the new models unchanged.
 
 ## Expected test failures
 

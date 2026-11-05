@@ -1,74 +1,74 @@
-"""Shared fixtures: in-memory database, fake API client and synthetic match helpers."""
-import json
-from datetime import datetime
+"""Shared fixtures: in-memory databases and the small CSV files.
+
+`mini_E0.csv` is a four-team Premier League season (2024/25), each team
+playing the others home and away: 12 matches over six Saturdays, with
+stats and Pinnacle, market-average and Asian handicap odds.
+"""
+import sys
 from pathlib import Path
 
 import pytest
 
-from scorecaster.api.base import JsonClient
-from scorecaster.db import Competition, Database, Match, Season, SeasonTeam, Team
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
+
+import create_db  # noqa: E402
+
+from scorecaster.config import FeatureConfig  # noqa: E402
+from scorecaster.db import Database  # noqa: E402
+from scorecaster.features.builder import FeatureBuilder  # noqa: E402
+from scorecaster.ingest.fdcuk import CsvLoader  # noqa: E402
+from scorecaster.ingest.fdcuk.files import CsvFile  # noqa: E402
+from scorecaster.leagues import LEAGUES  # noqa: E402
 
 FIXTURES = Path(__file__).parent / "fixtures"
+LEAGUES_BY_CODE = {league.code: league for league in LEAGUES}
+PAST_SEASON_CURRENT = 2026  # loading 2024/25 as a finished season
 
 
-class FakeJsonClient(JsonClient):
-    """Serves fixture files keyed by path and season; records calls."""
+def read_fixture(name: str) -> bytes:
+    """Return a CSV fixture's raw bytes."""
+    return (FIXTURES / name).read_bytes()
 
-    def __init__(self) -> None:
-        self.calls: list[tuple[str, dict | None, bool]] = []
 
-    def get(self, path, params=None, refresh=False):
-        self.calls.append((path, params, refresh))
-        name = path.replace("competitions/", "").split("/")
-        stem = f"{name[1]}_{name[0]}_{params['season']}" if len(name) > 1 else f"competition_{name[0]}"
-        return json.loads((FIXTURES / f"{stem}.json").read_text())
+def season_file(code: str, season_start: int) -> CsvFile:
+    """Return a per-season CsvFile for a league, with a dummy URL."""
+    return CsvFile(
+        LEAGUES_BY_CODE[code], season_start, f"test://{code}/{season_start}"
+    )
 
 
 @pytest.fixture
-def db(tmp_path):
-    database = Database.for_path(tmp_path / "test.db")
+def db() -> Database:
+    """Return an empty in-memory database with the league list synced."""
+    database = Database("sqlite://")
     database.create_schema()
+    create_db.sync_competitions(database, LEAGUES)
     return database
 
 
 @pytest.fixture
-def fake_client():
-    return FakeJsonClient()
-
-
-class LeagueFactory:
-    """Creates a competition, seasons, teams and matches directly in the database."""
-
-    def __init__(self, db: Database) -> None:
-        self.db = db
-        self._next_id = 1
-        with db.session() as s:
-            s.add(Competition(id=1, name="Test League", code="TL"))
-
-    def season(self, season_id: int, year: int, team_ids: list[int]) -> None:
-        with self.db.session() as s:
-            s.add(Season(id=season_id, competition_id=1, start_year=year))
-            for t in team_ids:
-                if s.get(Team, t) is None:
-                    s.add(Team(id=t, name=f"T{t}"))
-            s.flush()
-            s.add_all(SeasonTeam(season_id=season_id, team_id=t) for t in team_ids)
-
-    def match(self, season_id: int, when: str, home: int, away: int, score: tuple[int, int] | None) -> int:
-        mid = self._next_id
-        self._next_id += 1
-        with self.db.session() as s:
-            s.add(Match(id=mid, competition_id=1, season_id=season_id, utc_date=datetime.fromisoformat(when),
-                        status="FINISHED" if score else "SCHEDULED", home_team_id=home, away_team_id=away,
-                        ft_home=score[0] if score else None, ft_away=score[1] if score else None))
-        return mid
-
-    def finish(self, match_id: int, score: tuple[int, int]) -> None:
-        with self.db.session() as s:
-            m = s.get(Match, match_id)
-            m.status, m.ft_home, m.ft_away = "FINISHED", *score
+def loaded_db(db: Database) -> Database:
+    """Return the database with the mini Premier League season loaded."""
+    loader = CsvLoader(db, PAST_SEASON_CURRENT)
+    loader.load(season_file("E0", 2024), read_fixture("mini_E0.csv"))
+    return db
 
 
 @pytest.fixture
-def league(db):
-    return LeagueFactory(db)
+def featured_db(loaded_db: Database) -> Database:
+    """Return the mini season with its feature table built."""
+    FeatureBuilder(loaded_db, FeatureConfig()).rebuild()
+    return loaded_db
+
+
+def scalar(db: Database, sql: str):
+    """Return the single value an SQL query selects."""
+    with db.engine.connect() as connection:
+        return connection.exec_driver_sql(sql).scalar()
+
+
+def rows(db: Database, sql: str) -> list[tuple]:
+    """Return every row an SQL query selects."""
+    with db.engine.connect() as connection:
+        return [tuple(row) for row in connection.exec_driver_sql(sql)]
