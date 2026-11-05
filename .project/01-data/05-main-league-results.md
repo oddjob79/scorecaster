@@ -48,3 +48,19 @@ None new.
 - [x] step 2: header check
 - [x] step 3: pandas type conversion with failed-value report
 - [x] step 7: progress logging
+
+## Parser rules (settled 2026-11-05)
+
+`_parse_csv` in `scorecaster/ingest/fdcuk/reader.py` reads rows with the csv module and fits each row to the header, so one rule applies to every row:
+
+1. Byte-order mark and cp1252 are handled by `decode_csv`.
+2. Long rows with empty extra fields are trimmed (SP2 2007/08 `,,,`).
+3. Long rows whose extra fields hold data are logged and skipped (abandoned T1 2006/07 match).
+4. Rules 2–3 apply to every row, the first data row included.
+5. Quoted commas stay in one field (SP2 2009/10 `"-0.5,-1"`).
+6. Columns with an empty header are left out, by position, before pandas.
+7. Repeated header names get a suffix (`Time`, `Time.1`).
+8. Blank rows are skipped; short rows are padded.
+9. Values stay strings, empty as missing; an empty file raises an error.
+
+Each rule has a test in `tests/test_reader.py`.

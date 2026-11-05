@@ -119,7 +119,7 @@ Views: `v_team_match_features` adds the opponent's features as `opp_*`; `v_match
 
 ## Tests
 
-`python -m pytest -q` runs 81 tests in about a second, entirely in memory. There are four kinds:
+`python -m pytest -q` runs the suite in about a second, entirely in memory. There are four kinds of test:
 
 - **Pure functions:** CSV quirks, dates, odds columns and lines, seasons, the league config.
 - **Contracts over the registries:** every calculator returns exactly its columns, handles a first match, and never sees its own match's result; every table has a natural key; reloading changes nothing. New calculators, tables and leagues are checked automatically.

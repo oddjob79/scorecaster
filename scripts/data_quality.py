@@ -28,7 +28,9 @@ PLAYOFF_ONLY_GAMES = 4  # a season this short is a playoff tie, not a season
 STALE_GRACE_DAYS = 7
 NAME_SIMILARITY = 0.75
 MISSING_SHARE = 0.05
-PINNACLE_SEASONS = range(2012, 2026)  # Pinnacle closing odds exist here
+# Seasons Pinnacle closing odds cover in full; they stop partway
+# through 2025/26 (and calendar 2025).
+PINNACLE_SEASONS = range(2012, 2025)
 
 TEAM_SEASONS = """
     SELECT c.code, c.country, s.id AS season_id, s.label, s.start_year,

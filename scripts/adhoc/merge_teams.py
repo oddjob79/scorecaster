@@ -53,6 +53,12 @@ MOVE_ALIASES = text(
     "UPDATE team_aliases SET team_id = :canonical "
     "WHERE team_id = :variant"
 )
+EXISTING_ALIAS = text(
+    "SELECT team_id FROM team_aliases "
+    "WHERE country = :country AND alias = :alias"
+)
+# OR IGNORE only skips the row when it already maps to the canonical team;
+# plan_merge refuses any alias that maps elsewhere.
 ADD_ALIAS = text(
     "INSERT OR IGNORE INTO team_aliases (country, alias, team_id) "
     "VALUES (:country, :alias, :canonical)"
@@ -119,8 +125,9 @@ def parse_args() -> argparse.Namespace:
 def plan_merge(session, pair: str) -> Merge:
     """Look up both teams and refuse any merge that isn't safe.
 
-    Both teams must exist, be different, share a country, and no moved
-    match may collide with one the canonical team already has.
+    Both teams must exist, be different, share a country; no moved match
+    may collide with one the canonical team already has; and the variant
+    name must not already be an alias of a different team.
     """
     variant_id, canonical_id = (int(part) for part in pair.split(":"))
     if variant_id == canonical_id:
@@ -136,6 +143,14 @@ def plan_merge(session, pair: str) -> Merge:
     params = {"variant": variant_id, "canonical": canonical_id}
     if session.execute(COLLISIONS, params).scalar():
         raise SystemExit(f"{pair}: some matches would be duplicated")
+    aliased_to = session.execute(
+        EXISTING_ALIAS, {"country": variant.country, "alias": variant.name}
+    ).scalar()
+    if aliased_to is not None and aliased_to != canonical_id:
+        raise SystemExit(
+            f"{pair}: '{variant.name}' is already an alias of team "
+            f"{aliased_to}; remove that alias first"
+        )
     return Merge(
         variant_id=variant_id,
         canonical_id=canonical_id,

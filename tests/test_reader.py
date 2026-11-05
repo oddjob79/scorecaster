@@ -2,6 +2,7 @@
 import logging
 
 import pandas as pd
+import pytest
 
 from scorecaster.ingest.fdcuk.reader import (
     decode_csv,
@@ -78,3 +79,39 @@ def test_read_results_renames_older_and_extra_league_columns():
     results_df = read_results(body, "test")
     for column in ("HomeTeam", "AwayTeam", "FTHG", "FTAG", "FTR"):
         assert column in results_df
+
+
+def test_read_results_keeps_quoted_commas_in_one_field():
+    body = (
+        'Date,HomeTeam,AwayTeam,BbAHh\n'
+        '10/08/24,Ashford,Bexley,"-0.5,-1"\n'
+    ).encode("utf-8")
+    results_df = read_results(body, "test")
+    assert results_df["BbAHh"].iloc[0] == "-0.5,-1"
+
+
+def test_read_results_drops_columns_with_an_empty_header():
+    body = (
+        "Date,HomeTeam,AwayTeam,,FTHG,\n"
+        "10/08/24,Ashford,Bexley,junk,2,more junk\n"
+    ).encode("utf-8")
+    results_df = read_results(body, "test")
+    assert list(results_df.columns) == [
+        "Date", "HomeTeam", "AwayTeam", "FTHG"
+    ]
+    assert results_df["FTHG"].iloc[0] == 2
+
+
+def test_read_results_suffixes_repeated_column_names():
+    body = (
+        "Date,HomeTeam,AwayTeam,HS,HS\n"
+        "10/08/24,Ashford,Bexley,12,99\n"
+    ).encode("utf-8")
+    results_df = read_results(body, "test")
+    assert results_df["HS"].iloc[0] == 12
+    assert results_df["HS.1"].iloc[0] == "99"
+
+
+def test_read_results_rejects_an_empty_file():
+    with pytest.raises(ValueError, match="the file is empty"):
+        read_results(b"", "test")

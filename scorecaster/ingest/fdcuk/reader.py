@@ -81,44 +81,58 @@ def to_numbers(
 def _parse_csv(text: str, label: str) -> pd.DataFrame:
     """Parse CSV text into string columns, empty values as missing.
 
-    Rows are read with the csv module so every row gets the same rule
-    wherever it sits: blank lines are skipped, short rows padded, and
-    long rows trimmed or dropped by `_trim_extra_fields`. Columns with
-    an empty header are dropped.
+    Rows are read one at a time with the csv module (quoted commas stay
+    in one field) and fitted to the header by `_fit_row`, so every row
+    follows the same rule wherever it sits. Columns with an empty header
+    are left out; repeated names get a suffix ('Time', 'Time.1').
     """
     rows = csv.reader(io.StringIO(text))
-    header = next(rows)
-    width = len(header)
+    header = next(rows, None)
+    if header is None:
+        raise ValueError(f"{label}: the file is empty")
+    kept = [i for i, name in enumerate(header) if name.strip()]
+    names = _unique_names([header[i] for i in kept])
+
     records = []
     for fields in rows:
-        if not any(field.strip() for field in fields):
-            continue
-        if len(fields) > width:
-            fields = _trim_extra_fields(fields, width, label)
-            if fields is None:
-                continue
-        records.append(fields + [""] * (width - len(fields)))
-    results_df = pd.DataFrame(records, columns=header, dtype=object)
-    results_df = results_df.mask(results_df == "")
-    named = [name for name in header if name.strip()]
-    return results_df[named]
+        fitted = _fit_row(fields, len(header), label)
+        if fitted is not None:
+            records.append([fitted[i] for i in kept])
+    results_df = pd.DataFrame(records, columns=names, dtype=object)
+    return results_df.mask(results_df == "")
 
 
-def _trim_extra_fields(
+def _fit_row(
     fields: list[str], width: int, label: str
 ) -> list[str] | None:
-    """Cut a too-long row back to the header width, or skip it.
+    """Return a row fitted to the header width, or None to skip it.
 
-    Some files end rows with empty extra fields (SP2 2007/08 rows end
-    ``,,,``), which are safe to drop. Extras holding data, such as an
-    abandoned-match note, can't be placed in a column, so the row is
-    logged and skipped.
+    Blank rows are skipped. Short rows are padded with empty fields.
+    Long rows lose their extra fields if those are empty (SP2 2007/08
+    rows end ``,,,``); if any holds data, such as an abandoned-match
+    note, the row can't be placed in columns, so it is logged and
+    skipped.
     """
+    if not any(field.strip() for field in fields):
+        return None
     extras = fields[width:]
-    if all(not field.strip() for field in extras):
-        return fields[:width]
-    log.warning("%s: dropped row with extra data: %s", label, ",".join(fields))
-    return None
+    if any(field.strip() for field in extras):
+        log.warning(
+            "%s: dropped row with extra data: %s", label, ",".join(fields)
+        )
+        return None
+    return fields[:width] + [""] * (width - len(fields))
+
+
+def _unique_names(names: list[str]) -> list[str]:
+    """Suffix repeated names: ['Time', 'Time'] -> ['Time', 'Time.1']."""
+    seen: dict[str, int] = {}
+    unique = []
+    for name in names:
+        count = seen.get(name, 0)
+        seen[name] = count + 1
+        unique.append(f"{name}.{count}" if count else name)
+    return unique
 
 
 def _drop_bad_dates(results_df: pd.DataFrame, label: str) -> pd.DataFrame:
