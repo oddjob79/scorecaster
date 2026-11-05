@@ -125,8 +125,19 @@ class PyramidElo:
         home_goals: int,
         away_goals: int,
     ) -> None:
-        """Apply a result, and measure any mover that has played enough."""
+        """Apply a result, and measure any mover that has played enough.
+
+        Both teams must belong to the division. A match between divisions,
+        such as a cup tie, would otherwise move one team on the wrong
+        scale, so it raises instead.
+        """
         division = self._division(competition_id)
+        for team_id in (home_id, away_id):
+            if team_id not in division:
+                raise ValueError(
+                    f"team {team_id} isn't in division {competition_id}; "
+                    "cross-division matches aren't supported by pyramid Elo"
+                )
         division.update(home_id, away_id, home_goals, away_goals)
         for team_id in (home_id, away_id):
             self._count_mover_game(team_id, division)

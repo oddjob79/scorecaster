@@ -139,7 +139,7 @@ class FeatureBuilder:
             context = MatchContext.for_side(match, is_home, state)
             row = _context_columns(match, context)
             for calculator in self.calculators:
-                row.update(calculator.compute(context))
+                row.update(_checked_features(calculator, context))
             rows.append(row)
         return rows
 
@@ -165,6 +165,25 @@ class FeatureBuilder:
             connection.execute(table.insert(), rows)
         stats.replaced += len(existing)
         stats.inserted += len(match_ids) - len(existing)
+
+
+def _checked_features(
+    calculator: FeatureCalculator, context: MatchContext
+) -> dict:
+    """Return a calculator's features, raising if its keys are wrong.
+
+    A calculator must return exactly the columns it declares, otherwise
+    rows would be written with missing or misplaced values.
+    """
+    features = calculator.compute(context)
+    if set(features) != set(calculator.columns()):
+        declared, returned = set(calculator.columns()), set(features)
+        raise RuntimeError(
+            f"{type(calculator).__name__} returned the wrong keys: "
+            f"missing {sorted(declared - returned)}, "
+            f"unexpected {sorted(returned - declared)}"
+        )
+    return features
 
 
 def _context_columns(match: Match, context: MatchContext) -> dict:

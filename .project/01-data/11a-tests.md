@@ -41,6 +41,22 @@ Test what is easy to get wrong and expensive when wrong, not everything the code
 - pandas or SQLAlchemy behaviour, all 160 feature columns one by one, the real database, network access, a coverage percentage
 - schema migrations: adding columns to tables that already hold data needs `ALTER TABLE` or a tool such as Alembic. The step 2 tripwire forces that decision when the first such change comes.
 
+## Files
+
+| File | Covers |
+|---|---|
+| `tests/conftest.py` | in-memory `db`, `loaded_db` (mini season), `featured_db`; `read_fixture`, `season_file`, `scalar`, `rows` |
+| `tests/fixtures/mini_E0.csv` | 4 teams, 12 matches, 2024/25, with stats and odds |
+| `tests/fixtures/mini_BRA.csv`, `mini_fixtures.csv` | an extra-league file over two calendar seasons; a fixtures file repeating one finished match |
+| `test_reader.py` | BOM and cp1252, 2/4-digit years, `,,,` rows, extra-data rows, junk numbers, bad dates, renamed columns |
+| `test_odds.py` | `OddsColumn.parse`, `unknown_columns`, lines, handicap negation and split lines, empty prices |
+| `test_seasons_and_leagues.py` | `SeasonSpan`, `current_season_start`, `season_for`, `season_dir`, `LeagueConfig` validation, every league's URLs |
+| `test_contracts.py` | unique feature names; every calculator on a first match; **no leakage**; every table has a natural key; idempotent load |
+| `test_data_safety.py` | void/scheduled, extra-league load, fixture guard, download cache, 404 rule, the three tripwires, end to end |
+| `test_decision_elo.py` | Elo maths |
+| `test_decision_pyramid_design_b.py` | adjustments, fallback, move rating, 10-game measurement |
+| `test_decision_bands_phase_status.py` | proportional fifths, season phase, unplayed status |
+
 ## Expected size
 
 About 40–60 tests, running in a few seconds.
@@ -59,3 +75,7 @@ About 40–60 tests, running in a few seconds.
 - [x] calculator key check (step 2)
 - [ ] coverage report (`pytest-cov`, new dependency)
 - [ ] decision-test log in the docs
+
+## Result (2026-11-05)
+
+81 tests, all passing in under a second. The first run found a real bug: when a CSV's first data row had extra trailing fields, pandas took them as an index and shifted every column, skipping our extra-field rule. `_parse_csv` now reads rows with the csv module. All 500 cached files read identically before and after.

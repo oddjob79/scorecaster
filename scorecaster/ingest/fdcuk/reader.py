@@ -1,9 +1,9 @@
 """Read a football-data.co.uk CSV into one clean DataFrame."""
 from __future__ import annotations
 
+import csv
 import io
 import logging
-from functools import partial
 
 import pandas as pd
 
@@ -79,14 +79,29 @@ def to_numbers(
 
 
 def _parse_csv(text: str, label: str) -> pd.DataFrame:
-    """Parse CSV text as strings, dropping empty unnamed columns."""
-    header_width = len(text.splitlines()[0].split(","))
-    trim = partial(_trim_extra_fields, width=header_width, label=label)
-    results_df = pd.read_csv(
-        io.StringIO(text), dtype=str, engine="python", on_bad_lines=trim
-    )
-    unnamed = results_df.columns.str.startswith("Unnamed")
-    return results_df.loc[:, ~unnamed]
+    """Parse CSV text into string columns, empty values as missing.
+
+    Rows are read with the csv module so every row gets the same rule
+    wherever it sits: blank lines are skipped, short rows padded, and
+    long rows trimmed or dropped by `_trim_extra_fields`. Columns with
+    an empty header are dropped.
+    """
+    rows = csv.reader(io.StringIO(text))
+    header = next(rows)
+    width = len(header)
+    records = []
+    for fields in rows:
+        if not any(field.strip() for field in fields):
+            continue
+        if len(fields) > width:
+            fields = _trim_extra_fields(fields, width, label)
+            if fields is None:
+                continue
+        records.append(fields + [""] * (width - len(fields)))
+    results_df = pd.DataFrame(records, columns=header, dtype=object)
+    results_df = results_df.mask(results_df == "")
+    named = [name for name in header if name.strip()]
+    return results_df[named]
 
 
 def _trim_extra_fields(

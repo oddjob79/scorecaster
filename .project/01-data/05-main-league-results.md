@@ -13,7 +13,7 @@ Parse the cached main-league CSVs into `seasons`, `teams` and `matches` (scores 
 1. In `scorecaster/ingest/fdcuk/reader.py`, read a cached body into a DataFrame (`results_df`):
    - decode as UTF-8 with BOM, falling back to cp1252
    - drop blank trailing rows and unnamed empty columns
-   - trim empty fields beyond the header width (e.g. SP2 2007/08 rows ending `,,,`), and log and skip rows whose extra fields hold data
+   - trim empty fields beyond the header width (e.g. SP2 2007/08 rows ending `,,,`), and log and skip rows whose extra fields hold data. Rows are read with the csv module (chunk 11a), so this applies to every row. pandas' bad-line callback skipped it for a long first row and shifted every column instead.
    - parse `Date` in both `dd/mm/yy` (older seasons) and `dd/mm/yyyy`
 2. Check the header: list the result and stats columns each file lacks in its progress line. Unknown columns are reported in chunk 06, once the odds column map exists; until then every odds column would show up as unknown.
 3. Convert numeric columns with pandas, and log the values that fail to convert (league, season, row, column, value).

@@ -1,7 +1,10 @@
 """Create the SQLite database and its tables, then sync the league list.
 
 Missing tables are created and existing ones are left alone, so no data
-is ever deleted. Competitions are inserted or updated from the config.
+is ever deleted. If an existing table's columns differ from the models
+(a column added to a model later), it stops and lists the differences,
+since adding columns to a table with data needs a migration.
+Competitions are inserted or updated from the config.
 """
 import argparse
 from pathlib import Path
@@ -18,6 +21,7 @@ def main() -> None:
     path = database_path(parse_args().db)
     db = Database.for_path(path)
     created = db.create_schema()
+    check_schema(db)
     if created:
         print(f"{path}: created {created}")
     else:
@@ -38,6 +42,17 @@ def database_path(override: str | None) -> Path:
     if override is not None:
         return Path(override)
     return Settings.from_env().db_path
+
+
+def check_schema(db: Database) -> None:
+    """Stop with a list of differences if models and tables disagree."""
+    differences = db.schema_differences()
+    if differences:
+        listed = "\n  ".join(differences)
+        raise SystemExit(
+            f"the database doesn't match the models:\n  {listed}\n"
+            "add the columns with a migration before loading"
+        )
 
 
 def sync_competitions(

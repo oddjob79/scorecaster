@@ -43,6 +43,27 @@ class Database:
         Base.metadata.create_all(self.engine, checkfirst=True)
         return sorted(self.existing_tables() - before)
 
+    def schema_differences(self) -> list[str]:
+        """Describe every column the models and the stored tables disagree on.
+
+        `create_schema` only adds missing tables, never columns, so a
+        column added to a model later is silently absent from an existing
+        database. An empty list means the two match.
+        """
+        inspector = inspect(self.engine)
+        stored_tables = set(inspector.get_table_names())
+        differences = []
+        for table in Base.metadata.sorted_tables:
+            if table.name not in stored_tables:
+                continue
+            stored = {c["name"] for c in inspector.get_columns(table.name)}
+            modelled = {column.name for column in table.columns}
+            for name in sorted(modelled - stored):
+                differences.append(f"{table.name}.{name}: not in database")
+            for name in sorted(stored - modelled):
+                differences.append(f"{table.name}.{name}: not in models")
+        return differences
+
     @contextmanager
     def session(self) -> Iterator[Session]:
         """Yield a session that commits on success and rolls back on error."""
