@@ -47,19 +47,21 @@ One table component with three controls:
 
 | Control | Values | Effect |
 |---|---|---|
-| View | **Table**, **Form** | Table: all matches in the season so far. Form: each team's last N matches only, ranked by points from those matches. |
+| View | **Table**, **Form** | Table: all matches in the season so far. Form: each team's last 6 matches (overall) or last 4 (home, away) only, ranked by points from those matches. |
 | Venue | **Overall**, **Home**, **Away** | Home counts only home matches; away only away matches. |
 | Date slider | Any date in the season | Everything is computed from matches before that date. |
 
-Columns in every combination: Pos, Team, P, W, D, L, GF, GA, GD, Pts, and **Form** as W/D/L chips for the last N matches in that venue, oldest to newest (e.g. `W W L D W L`). N defaults to 6, the usual length of a form table.
+Columns in every combination: Pos, Team, P, W, D, L, GF, GA, GD, Pts, and **Form** as W/D/L chips, oldest to newest (e.g. `W W L D W L`).
 
-Example: *Form · Home · 1 Feb 2025* ranks teams by points from their last 6 home matches before 1 February 2025 and shows those 6 results as chips.
+**Decided:** form covers the last **6** matches overall and the last **4** home or away matches. The same lengths apply to the chips and to every form view in the app.
+
+Example: *Form · Home · 1 Feb 2025* ranks teams by points from their last 4 home matches before 1 February 2025 and shows those 4 results as chips.
 
 The table and form tables are both computed from `matches` in the API. The feature table's `form_*` columns are pre-kick-off values at fixed windows (4, 6, 8) and don't carry the W/D/L sequence, so they don't fit here.
 
 ### Team page
 
-- **Header:** current league, position, points, and form chips for the last 6 matches overall, home and away (three rows).
+- **Header:** current league, position, points, and form chips for the last 6 matches overall and the last 4 home and 4 away (three rows).
 - **Season record:** P W D L GF GA Pts, split overall/home/away, for a chosen season.
 - **Position chart:** league position by matchday for the chosen season. It's the compare page's chart with one team.
 - **Goals for and against** per match over the season, with a rolling average.
@@ -76,7 +78,7 @@ League position by matchday for up to 6 teams from one league-season. The y axis
 
 | Piece | Effort | Notes |
 |---|---|---|
-| Table and form endpoints (overall/home/away, as at date) | 3 | One Python function: matches before date → per-team rows. Form adds "last N" per team and the chip sequence. |
+| Table and form endpoints (overall/home/away, as at date) | 3 | One Python function: matches before date → per-team rows. Form adds "last 6 / last 4" per team and the chip sequence. |
 | Table component with view, venue and slider | 3 | One component, one set of URL params. Prefetches neighbouring dates. |
 | Position-by-matchday endpoint and chart | 3 | Positions after each matchday per team; one ECharts option builder shared by team and compare pages. |
 | Team page | 4 | Mostly reuses the above. Elo journey is the one new chart. |
@@ -122,7 +124,7 @@ compose.yaml
 |---|---|---|
 | **TanStack Query cache** | Data from the API | E0 2024/25 form table, home, as at 2025-02-01 |
 | **URL search params** | What the current page shows | `/league/E0?season=2024&view=form&venue=home&date=2025-02-01` |
-| **Zustand, persisted to `localStorage`** | What follows you between pages and visits | Compare basket, favourite teams, form length N, last-used league and venue, theme, recently viewed teams |
+| **Zustand, persisted to `localStorage`** | What follows you between pages and visits | Compare basket, favourite teams, last-used league and venue, theme, recently viewed teams |
 | **Component state** | Transient UI | Slider position mid-drag, open dropdown |
 
 The store holds defaults, and the URL owns the current view. Opening `/league` with no params fills them from the store's last-used values; from then on the URL is the owner.
@@ -183,7 +185,7 @@ README screenshots and a screen recording show the app to readers who don't run 
 
 ### READMEs
 
-**Decided:** two READMEs, set up as the first step of the stats-app work.
+**Decided:** two READMEs. Both exist; the root readme gains run instructions in phase 02 and screenshots in phase 05.
 
 | README | Covers |
 |---|---|
@@ -213,7 +215,7 @@ Each page...
 - `scripts/build_app_db.py`: the app database (option B).
 - `scorecaster/api/`: FastAPI app; read-only session on `app.db`; Pydantic response models; routers for:
   - competitions and seasons;
-  - table and form table (view, venue, N, date);
+  - table and form table (view, venue, date);
   - positions by matchday;
   - team summary;
   - Elo journey;
@@ -243,5 +245,20 @@ Each page...
 
 ## 11. Open decisions
 
-1. Form table length: fixed at 6, or user-selectable (4, 6, 8)? (section 2)
-2. First page brief to write. (section 8)
+None at app level. Each phase spec lists its own open questions (section 12).
+
+## 12. Phases
+
+Each phase is one branch. It has a `spec.md` and chunk files in its folder, and ends with a tests chunk before merging.
+
+| # | Phase | Delivers | Depends on |
+|---|---|---|---|
+| 01 | [Design](01-design/spec.md) | Visual direction; brief and mockup for each MVP page | |
+| 02 | [Foundations](02-foundations/spec.md) | `app.db` build; FastAPI skeleton (competitions, seasons); Vite + React + TypeScript scaffold; generated API client; app shell with navigation, theme and Zustand store; ECharts wrapper; Docker Compose; root readme run instructions | 01 |
+| 03 | [League page](03-league-page/spec.md) | Table and form endpoints; table component with view, venue and date slider | 02 |
+| 04 | [Team page](04-team-page/spec.md) | Team summary, position-by-matchday and Elo journey endpoints; team page; compare basket | 03 |
+| 05 | [Compare and landing pages](05-compare-landing/spec.md) | Compare page; landing headlines; Playwright tests across the MVP; README screenshots | 04 |
+| 06 | Market section (Extension 1) | Market summary tables; calibration, margins, upsets; this week's fixtures with head-to-head | 05 |
+| 07 | MCP server (Extension 2) | Shared tool functions; MCP server | 05 |
+| 08 | Chat page (Extension 3) | Tool-use loop against the Claude API; chat page; `open_view` tool | 07 |
+| 09 | Model pages | Predictions from scorecaster phase 02 onwards | 05, scorecaster 02 |
