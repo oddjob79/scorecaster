@@ -251,6 +251,12 @@ None at app level. Each phase spec lists its own open questions (section 12).
 
 Each phase is one branch. It has a `spec.md` and chunk files in its folder, and ends with a tests chunk before merging.
 
+A chunk file is that chunk's plan. It's used in three steps:
+
+1. **When the phase is specced**, the chunk file has Goal, Depends on, Steps, Proof and Scope ledger.
+2. **Just before the chunk is built**, it's refreshed in plan mode against the current code: **Files that change** and **Risks** are added, the steps are corrected, and the user approves it before any code is written.
+3. **During the build**, any departure from the steps is written into the chunk file in the same commit.
+
 | # | Phase | Delivers | Depends on |
 |---|---|---|---|
 | 01 | [Design](01-design/spec.md) | Visual direction; brief and mockup for each MVP page | |
