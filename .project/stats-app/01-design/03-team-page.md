@@ -26,6 +26,22 @@ An approved brief and mockup for the team page.
 - You approve `team.html`.
 - Its numbers match the queried data.
 
+## Outcome
+
+Approved 2026-11-08, built on Premier League 2024/25 with Nottingham Forest as the default team.
+
+The brief replaced three of the starting points:
+- the season record table;
+- "Add to compare";
+- overlay teams.
+
+In their place it added:
+- cascading pickers;
+- a date slider;
+- a five-view chart panel, with home/away shown as table positions and result tooltips.
+
+`04-team-page/spec.md` has the detail.
+
 ## Scope ledger
 
 **Core**

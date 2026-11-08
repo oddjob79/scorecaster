@@ -1,0 +1,408 @@
+<title>Scorecaster Style B</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Narrow:wght@500;600;700&family=Libre+Franklin:wght@400;600;700;800&display=swap">
+<style>
+/* Layout: a matchday programme. Light paper, section tabs in programme red, thick rules instead of boxed cards, room around every stat. */
+:root {
+  --bg: #fbfbf9;
+  --paper: #ffffff;
+  --ink: #16181d;
+  --muted: #5f6470;
+  --rule: #16181d;
+  --hair: #dcdde0;
+  --tint: #f1f1ee;
+  --accent: #b3202a;
+  --accent-ink: #a01c25;
+  --on-accent: #ffffff;
+  --win: #187a4a;
+  --draw: #9a9ea8;
+  --loss: #b3202a;
+  --band-a: rgba(179, 32, 42, 0.07);
+  --band-b: rgba(22, 24, 29, 0.035);
+  --grid: #e7e8ea;
+
+  --font-display: "Archivo Narrow", "Arial Narrow", sans-serif;
+  --font-body: "Libre Franklin", "Franklin Gothic Medium", "Segoe UI", sans-serif;
+
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 40px; --s7: 64px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #111317; --paper: #171a1f; --ink: #eceae6; --muted: #a2a6ae; --rule: #eceae6; --hair: #2c3038; --tint: #1d2026;
+    --accent: #e0444d; --accent-ink: #ef6a71; --on-accent: #ffffff;
+    --win: #3fb37a; --draw: #7d828c; --loss: #e0444d;
+    --band-a: rgba(224, 68, 77, 0.10); --band-b: rgba(236, 234, 230, 0.04); --grid: #262a31;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #111317; --paper: #171a1f; --ink: #eceae6; --muted: #a2a6ae; --rule: #eceae6; --hair: #2c3038; --tint: #1d2026;
+  --accent: #e0444d; --accent-ink: #ef6a71; --on-accent: #ffffff;
+  --win: #3fb37a; --draw: #7d828c; --loss: #e0444d;
+  --band-a: rgba(224, 68, 77, 0.10); --band-b: rgba(236, 234, 230, 0.04); --grid: #262a31;
+}
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.55; }
+.page {
+  max-width: 1080px; margin: 0 auto;
+  padding-block: var(--s6) var(--s7);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: var(--s7);
+}
+h1, h2, h3 { font-family: var(--font-display); margin: 0; text-wrap: balance; text-transform: uppercase; }
+p { margin: 0; }
+.num { font-variant-numeric: tabular-nums; }
+.kicker { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); }
+
+/* Masthead */
+.mast { display: grid; gap: var(--s4); border-top: 6px solid var(--rule); padding-top: var(--s4); }
+.mast-row { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: var(--s4); }
+.mast h1 { font-size: 64px; line-height: 0.92; font-weight: 700; letter-spacing: -0.01em; }
+.mast h1 em { font-style: normal; color: var(--accent-ink); }
+.mast p { max-width: 62ch; color: var(--muted); }
+
+/* Section tab: a solid red label sitting on a thick rule. */
+section { display: grid; gap: var(--s5); }
+.tab { display: flex; align-items: end; gap: var(--s3); border-bottom: 3px solid var(--rule); }
+.tab h2 {
+  font-size: 18px; font-weight: 700; letter-spacing: 0.06em;
+  background: var(--accent); color: var(--on-accent); padding: 6px 14px 4px;
+}
+.tab .kicker { padding-bottom: 6px; }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: var(--s6); }
+.cols > * { min-width: 0; }
+
+/* Palette */
+.swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--s5) var(--s4); }
+.swatch { display: grid; gap: var(--s2); }
+.swatch .c { height: 56px; border: 1px solid var(--hair); }
+.swatch b { font-size: 14px; }
+.swatch small { color: var(--muted); font-size: 13px; }
+
+/* Type */
+.type-row { display: grid; grid-template-columns: 130px 1fr; gap: var(--s4); align-items: baseline; padding-block: var(--s3); border-bottom: 1px solid var(--hair); }
+.t-xl { font-family: var(--font-display); font-size: 72px; font-weight: 700; line-height: 0.9; }
+.t-h1 { font-family: var(--font-display); font-size: 36px; font-weight: 700; text-transform: uppercase; line-height: 1; }
+.t-h2 { font-family: var(--font-display); font-size: 22px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; }
+.t-body { font-size: 16px; }
+.t-small { font-size: 13px; color: var(--muted); }
+
+/* Spacing */
+.space-row { display: grid; grid-template-columns: 60px 1fr; gap: var(--s3); align-items: center; padding-block: 3px; }
+.space-bar { height: 12px; background: var(--ink); }
+
+/* Controls */
+.controls { display: flex; flex-wrap: wrap; gap: var(--s3); align-items: center; }
+.tabs-ctl { display: inline-flex; border: 2px solid var(--rule); }
+.tabs-ctl button {
+  font: 700 13px var(--font-body); text-transform: uppercase; letter-spacing: 0.06em;
+  background: transparent; color: var(--ink); border: 0; padding: 7px 14px; cursor: pointer;
+}
+.tabs-ctl button + button { border-left: 2px solid var(--rule); }
+.tabs-ctl button[aria-pressed="true"] { background: var(--rule); color: var(--bg); }
+.btn { font: 700 14px var(--font-body); text-transform: uppercase; letter-spacing: 0.06em; padding: 11px 18px; cursor: pointer; border: 2px solid transparent; background: none; }
+.btn-primary { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.btn-primary:hover { filter: brightness(1.08); }
+.btn-secondary { color: var(--ink); border-color: var(--rule); }
+.btn-secondary:hover { background: var(--tint); }
+.btn-ghost { color: var(--accent-ink); padding-inline: 4px; text-decoration: underline; text-underline-offset: 4px; }
+button:focus-visible, select:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.select { font: 600 15px var(--font-body); color: var(--ink); background: var(--paper); border: 2px solid var(--rule); border-radius: 0; padding: 8px 12px; min-width: 0; }
+.date { font: 700 14px var(--font-body); }
+
+/* Form chips: square, letter only on hover-free print style */
+.form { display: inline-flex; gap: 2px; }
+.f { width: 22px; height: 22px; display: inline-grid; place-items: center; font: 800 12px var(--font-body); color: #fff; }
+.f.W { background: var(--win); } .f.D { background: var(--draw); } .f.L { background: var(--loss); }
+
+/* Table */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; background: var(--paper); }
+thead th { border-bottom: 3px solid var(--rule); }
+th { text-align: right; font: 700 12px var(--font-body); text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink); padding: 10px 10px; white-space: nowrap; }
+td { text-align: right; padding: 12px 10px; border-bottom: 1px solid var(--hair); white-space: nowrap; }
+th.l, td.l { text-align: left; }
+tbody tr:nth-child(even) td { background: var(--tint); }
+td.pos { font-family: var(--font-display); font-size: 20px; font-weight: 700; width: 36px; }
+td.team { font-weight: 700; }
+td.pts { font-family: var(--font-display); font-size: 20px; font-weight: 700; }
+tr.lead td.pos { color: var(--accent-ink); }
+
+/* Team panel */
+.team-panel { display: grid; gap: var(--s5); }
+.team-panel .head { display: flex; justify-content: space-between; align-items: end; gap: var(--s3); flex-wrap: wrap; border-bottom: 1px solid var(--hair); padding-bottom: var(--s4); }
+.team-panel h3 { font-size: 44px; line-height: 0.95; }
+.figures { display: grid; grid-template-columns: repeat(3, 1fr); }
+.figure { border-left: 3px solid var(--rule); padding-left: var(--s3); }
+.figure b { display: block; font: 700 48px/1 var(--font-display); }
+.figure span { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
+.form-rows { display: grid; grid-template-columns: 80px 1fr; gap: var(--s3); align-items: center; }
+
+/* Chart */
+.chart svg { width: 100%; height: auto; display: block; }
+.legend { display: flex; flex-wrap: wrap; gap: var(--s5); font-size: 13px; color: var(--muted); }
+.legend i { display: inline-block; width: 14px; height: 14px; margin-right: 6px; vertical-align: -2px; border: 1px solid var(--hair); }
+.note { font-size: 13px; color: var(--muted); max-width: 70ch; }
+
+@media (max-width: 480px) {
+  .mast h1 { font-size: 44px; }
+  .t-xl { font-size: 52px; }
+  .type-row { grid-template-columns: 1fr; gap: var(--s1); }
+  .figure b { font-size: 36px; }
+  .team-panel h3 { font-size: 34px; }
+}
+</style>
+
+<div class="page">
+  <header class="mast">
+    <div class="mast-row">
+      <span class="kicker">Style tile B · Matchday programme</span>
+      <div class="tabs-ctl" role="group" aria-label="Theme">
+        <button type="button" id="theme-light" aria-pressed="false">Light</button>
+        <button type="button" id="theme-dark" aria-pressed="false">Dark</button>
+      </div>
+    </div>
+    <h1>Printed-page calm, <em>programme red</em></h1>
+    <p>Light first and editorial. Big condensed headings, thick rules in place of boxes, and room around every number. Sections open with a red tab, so the accent marks structure as well as actions.</p>
+  </header>
+
+  <section>
+    <div class="tab"><h2>Colour</h2><span class="kicker">Current theme</span></div>
+    <div class="swatches">
+      <div class="swatch"><div class="c" style="background:var(--bg)"></div><b>Background</b><small>Page ground</small></div>
+      <div class="swatch"><div class="c" style="background:var(--paper)"></div><b>Paper</b><small>Tables, panels</small></div>
+      <div class="swatch"><div class="c" style="background:var(--tint)"></div><b>Tint</b><small>Alternate rows, hover</small></div>
+      <div class="swatch"><div class="c" style="background:var(--ink)"></div><b>Ink</b><small>Text and rules</small></div>
+      <div class="swatch"><div class="c" style="background:var(--muted)"></div><b>Muted</b><small>Captions, axes</small></div>
+      <div class="swatch"><div class="c" style="background:var(--accent)"></div><b>Programme red</b><small>Tabs, actions</small></div>
+      <div class="swatch"><div class="c" style="background:var(--win)"></div><b>Win</b><small>W chip</small></div>
+      <div class="swatch"><div class="c" style="background:var(--draw)"></div><b>Draw</b><small>D chip</small></div>
+      <div class="swatch"><div class="c" style="background:var(--loss)"></div><b>Loss</b><small>L chip (shares red)</small></div>
+    </div>
+  </section>
+
+  <div class="cols">
+    <section>
+      <div class="tab"><h2>Type</h2><span class="kicker">Archivo Narrow / Libre Franklin</span></div>
+      <div>
+        <div class="type-row"><span class="kicker">Display 72</span><span class="t-xl num">53 pts</span></div>
+        <div class="type-row"><span class="kicker">Heading 36</span><span class="t-h1">Premier League 2024/25</span></div>
+        <div class="type-row"><span class="kicker">Heading 22</span><span class="t-h2">Form · Home · 1 Feb 2025</span></div>
+        <div class="type-row"><span class="kicker">Body 16</span><span class="t-body">Liverpool lead by six points with one game in hand.</span></div>
+        <div class="type-row"><span class="kicker">Small 13</span><span class="t-small">Computed from matches before 1 February 2025.</span></div>
+      </div>
+    </section>
+
+    <section>
+      <div class="tab"><h2>Spacing</h2><span class="kicker">8px rhythm, wide gaps</span></div>
+      <div>
+        <div class="space-row"><span class="kicker">4</span><div class="space-bar" style="width:4px"></div></div>
+        <div class="space-row"><span class="kicker">8</span><div class="space-bar" style="width:8px"></div></div>
+        <div class="space-row"><span class="kicker">12</span><div class="space-bar" style="width:12px"></div></div>
+        <div class="space-row"><span class="kicker">16</span><div class="space-bar" style="width:16px"></div></div>
+        <div class="space-row"><span class="kicker">24</span><div class="space-bar" style="width:24px"></div></div>
+        <div class="space-row"><span class="kicker">40</span><div class="space-bar" style="width:40px"></div></div>
+        <div class="space-row"><span class="kicker">64</span><div class="space-bar" style="width:64px"></div></div>
+        <p class="note" style="margin-top:12px">Square corners everywhere. Rules are 1px (hairline), 2px (controls) or 3px (section and table heads).</p>
+      </div>
+    </section>
+  </div>
+
+  <section>
+    <div class="tab"><h2>League table</h2><span class="kicker">Premier League · table · overall</span></div>
+    <div class="controls">
+      <select class="select" id="league-select" aria-label="League">
+        <option>Premier League</option><option>Championship</option><option>La Liga</option>
+      </select>
+      <div class="tabs-ctl" role="group" aria-label="View">
+        <button type="button" aria-pressed="true">Table</button><button type="button" aria-pressed="false">Form</button>
+      </div>
+      <div class="tabs-ctl" role="group" aria-label="Venue">
+        <button type="button" aria-pressed="true">Overall</button><button type="button" aria-pressed="false">Home</button><button type="button" aria-pressed="false">Away</button>
+      </div>
+      <span class="date num">As at 1 Feb 2025</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th class="l">Pos</th><th class="l">Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GF</th><th>GA</th><th>GD</th><th>Pts</th><th class="l">Form</th>
+        </tr></thead>
+        <tbody id="table-body"></tbody>
+      </table>
+    </div>
+    <p class="note">Top 8 shown. Form is the last 6 matches, oldest to newest.</p>
+  </section>
+
+  <div class="cols">
+    <section>
+      <div class="tab"><h2>Team panel</h2><span class="kicker">Card equivalent</span></div>
+      <div class="team-panel">
+        <div class="head">
+          <div>
+            <span class="kicker">Premier League · 1 Feb 2025</span>
+            <h3>Liverpool</h3>
+          </div>
+          <button type="button" class="btn btn-secondary">Add to compare</button>
+        </div>
+        <div class="figures">
+          <div class="figure"><b class="num">1st</b><span>Position</span></div>
+          <div class="figure"><b class="num">53</b><span>Points</span></div>
+          <div class="figure"><b class="num">+33</b><span>Goal diff</span></div>
+        </div>
+        <div class="form-rows">
+          <span class="kicker">Last 6</span><span class="form" data-form="WWDDWW"></span>
+          <span class="kicker">Home 4</span><span class="form" data-form="DWDW"></span>
+          <span class="kicker">Away 4</span><span class="form" data-form="WWDW"></span>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="tab"><h2>Buttons and select</h2><span class="kicker">Controls</span></div>
+      <div style="display:grid;gap:20px">
+        <div class="controls">
+          <button type="button" class="btn btn-primary">Compare 3 teams</button>
+          <button type="button" class="btn btn-secondary">Copy link</button>
+          <button type="button" class="btn btn-ghost">Reset view</button>
+        </div>
+        <div class="controls">
+          <select class="select" id="season-select" aria-label="Season">
+            <option>2024/25</option><option>2023/24</option><option>2022/23</option>
+          </select>
+          <div class="tabs-ctl" role="group" aria-label="Metric">
+            <button type="button" aria-pressed="true">Position</button><button type="button" aria-pressed="false">Elo</button>
+          </div>
+        </div>
+        <p class="note">Primary is the single main action on a view; secondary and the underlined link do the rest.</p>
+      </div>
+    </section>
+  </div>
+
+  <section>
+    <div class="tab"><h2>Line chart</h2><span class="kicker">Leeds · Elo at the end of each season</span></div>
+    <div class="chart" style="display:grid;gap:12px">
+      <div class="legend">
+        <span><i style="background:var(--band-a)"></i>Premier League season</span>
+        <span><i style="background:var(--band-b)"></i>Championship season</span>
+      </div>
+      <svg id="elo-chart" viewBox="0 0 720 280" role="img" aria-label="Leeds Elo at each season end, 2016/17 to 2026/27"></svg>
+      <p class="note">Elo uses a separate 1500-centred scale per division, so a promotion shows as a drop in the line, not a fall in quality. 2026/27 is the latest value so far.</p>
+    </div>
+  </section>
+</div>
+
+<script>
+// Theme toggle: sets data-theme on the root element; without a choice the viewer's theme applies.
+(function () {
+  const root = document.documentElement;
+  const darkBtn = document.getElementById("theme-dark");
+  const lightBtn = document.getElementById("theme-light");
+  function current() {
+    const set = root.getAttribute("data-theme");
+    if (set) return set;
+    return matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  }
+  function sync() {
+    const t = current();
+    darkBtn.setAttribute("aria-pressed", String(t === "dark"));
+    lightBtn.setAttribute("aria-pressed", String(t === "light"));
+    drawChart();
+  }
+  darkBtn.addEventListener("click", () => { root.setAttribute("data-theme", "dark"); sync(); });
+  lightBtn.addEventListener("click", () => { root.setAttribute("data-theme", "light"); sync(); });
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", sync);
+  window.addEventListener("DOMContentLoaded", sync);
+})();
+
+function renderForm(el, seq) {
+  el.innerHTML = "";
+  for (const r of seq) {
+    const s = document.createElement("span");
+    s.className = "f " + r;
+    s.textContent = r;
+    s.setAttribute("aria-label", r === "W" ? "Win" : r === "D" ? "Draw" : "Loss");
+    el.appendChild(s);
+  }
+}
+
+// Premier League table before 1 Feb 2025 (from data/scorecaster.db); form oldest to newest.
+const TABLE = [
+  ["Liverpool", 22, 16, 5, 1, 54, 21, 53, "WWDDWW"],
+  ["Arsenal", 23, 13, 8, 2, 44, 21, 47, "WWDWDW"],
+  ["Nott'm Forest", 23, 13, 5, 5, 33, 27, 44, "WWWDWL"],
+  ["Man City", 23, 12, 5, 6, 47, 30, 41, "DWWDWW"],
+  ["Newcastle", 23, 12, 5, 6, 41, 27, 41, "WWWWLW"],
+  ["Chelsea", 23, 11, 7, 5, 45, 30, 40, "LLDDWL"],
+  ["Bournemouth", 23, 11, 7, 5, 41, 26, 40, "DDWDWW"],
+  ["Aston Villa", 23, 10, 7, 6, 34, 35, 37, "LDWWDD"],
+];
+(function () {
+  const body = document.getElementById("table-body");
+  TABLE.forEach((r, i) => {
+    const [team, p, w, d, l, gf, ga, pts, form] = r;
+    const gd = gf - ga;
+    const tr = document.createElement("tr");
+    if (i === 0) tr.className = "lead";
+    tr.innerHTML =
+      `<td class="l pos">${i + 1}</td><td class="l team">${team}</td>` +
+      `<td>${p}</td><td>${w}</td><td>${d}</td><td>${l}</td><td>${gf}</td><td>${ga}</td>` +
+      `<td>${gd > 0 ? "+" + gd : gd}</td><td class="pts">${pts}</td><td class="l"><span class="form"></span></td>`;
+    renderForm(tr.querySelector(".form"), form);
+    body.appendChild(tr);
+  });
+  document.querySelectorAll("[data-form]").forEach(el => renderForm(el, el.dataset.form));
+})();
+
+// Leeds Elo at each season end (last pre-match value), with division per season.
+const ELO = [
+  ["16/17", "E1", 1560], ["17/18", "E1", 1462], ["18/19", "E1", 1580], ["19/20", "E1", 1663],
+  ["20/21", "E0", 1559], ["21/22", "E0", 1442], ["22/23", "E0", 1392],
+  ["23/24", "E1", 1644], ["24/25", "E1", 1719], ["25/26", "E0", 1550], ["26/27", "E0", 1542],
+];
+function css(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+function drawChart() {
+  const svg = document.getElementById("elo-chart");
+  const W = 720, H = 280, L = 48, R = 16, T = 16, B = 36;
+  const yMin = 1350, yMax = 1750;
+  const step = (W - L - R) / ELO.length;
+  const x = i => L + step * (i + 0.5);
+  const y = v => T + (yMax - v) / (yMax - yMin) * (H - T - B);
+  const ns = "http://www.w3.org/2000/svg";
+  const font = "Libre Franklin, sans-serif";
+  svg.innerHTML = "";
+  const add = (tag, attrs, text) => {
+    const el = document.createElementNS(ns, tag);
+    for (const k in attrs) el.setAttribute(k, attrs[k]);
+    if (text != null) el.textContent = text;
+    svg.appendChild(el);
+    return el;
+  };
+  ELO.forEach((d, i) => add("rect", {
+    x: L + step * i, y: T, width: step, height: H - T - B,
+    fill: d[1] === "E0" ? css("--band-a") : css("--band-b"),
+  }));
+  for (let v = yMin; v <= yMax; v += 100) {
+    add("line", { x1: L, x2: W - R, y1: y(v), y2: y(v), stroke: css("--grid"), "stroke-width": 1 });
+    add("text", { x: L - 8, y: y(v) + 4, "text-anchor": "end", "font-size": 12, fill: css("--muted"), "font-family": font }, v);
+  }
+  add("line", { x1: L, x2: W - R, y1: H - B, y2: H - B, stroke: css("--rule"), "stroke-width": 2 });
+  ELO.forEach((d, i) => add("text", {
+    x: x(i), y: H - 12, "text-anchor": "middle", "font-size": 12, "font-weight": 700, fill: css("--ink"), "font-family": font,
+  }, d[0]));
+  add("polyline", {
+    points: ELO.map((d, i) => `${x(i)},${y(d[2])}`).join(" "),
+    fill: "none", stroke: css("--ink"), "stroke-width": 2.5,
+  });
+  ELO.forEach((d, i) => {
+    const last = i === ELO.length - 1;
+    add("rect", { x: x(i) - (last ? 6 : 4), y: y(d[2]) - (last ? 6 : 4), width: last ? 12 : 8, height: last ? 12 : 8, fill: last ? css("--accent") : css("--ink") });
+  });
+  const li = ELO.length - 1;
+  add("text", { x: x(li), y: y(ELO[li][2]) - 14, "text-anchor": "middle", "font-size": 13, "font-weight": 800, fill: css("--accent-ink"), "font-family": font }, ELO[li][2]);
+}
+</script>

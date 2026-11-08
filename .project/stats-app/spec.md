@@ -36,56 +36,54 @@ Elo and form features need history from before the window. They're copied from t
 
 ### Pages
 
-1. **Landing page:** league and season picker. Headline charts: current Elo top 10 per pyramid (a Championship side can rank above a Premier League side) and home advantage by league over the decade.
-2. **League page:** league table and form table (below), with a date slider.
-3. **Team page:** position, form, splits and the Elo journey (below).
-4. **Compare page:** league position by matchday for chosen teams (below).
+1. **Landing page:** title and tagline, about text, a season-by-season chart of 13 metrics per competition (results, goals, match stats, discipline, market), and the current Elo top 10 per division with an explainer. Approved mockup: `design/landing.html`.
+2. **League page:** stats table with five views and top performers, with a date slider (below).
+3. **Team page:** position, form and a five-view chart panel including the Elo journey (below).
+4. **Matches page:** each day's results and fixtures across the chosen competitions, with match details (below).
 
-### League page: tables
+### League page
 
-One table component with three controls:
-
-| Control | Values | Effect |
-|---|---|---|
-| View | **Table**, **Form** | Table: all matches in the season so far. Form: each team's last 6 matches (overall) or last 4 (home, away) only, ranked by points from those matches. |
-| Venue | **Overall**, **Home**, **Away** | Home counts only home matches; away only away matches. |
-| Date slider | Any date in the season | Everything is computed from matches before that date. |
-
-Columns in every combination: Pos, Team, P, W, D, L, GF, GA, GD, Pts, and **Form** as W/D/L chips, oldest to newest (e.g. `W W L D W L`).
+- **Pickers and date:** league and season pickers, and a date slider over the season's match dates, as of 23:59.
+- **Stats table:** five views (Table, Form, Goals, Shots, Discipline), each split Overall, Home or Away, with sortable columns and W/D/L chips.
+- **Top performers:** eight rotating cards.
 
 **Decided:** form covers the last **6** matches overall and the last **4** home or away matches. The same lengths apply to the chips and to every form view in the app.
 
-Example: *Form · Home · 1 Feb 2025* ranks teams by points from their last 4 home matches before 1 February 2025 and shows those 4 results as chips.
-
-The table and form tables are both computed from `matches` in the API. The feature table's `form_*` columns are pre-kick-off values at fixed windows (4, 6, 8) and don't carry the W/D/L sequence, so they don't fit here.
+The approved mockup is `design/league.html`; `03-league-page/spec.md` has the detail.
 
 ### Team page
 
-- **Header:** current league, position, points, and form chips for the last 6 matches overall and the last 4 home and 4 away (three rows).
-- **Season record:** P W D L GF GA Pts, split overall/home/away, for a chosen season.
-- **Position chart:** league position by matchday for the chosen season. It's the compare page's chart with one team.
-- **Goals for and against** per match over the season, with a rolling average.
-- **Elo journey:** Elo across all seasons in range, with background bands for the division the team was in each season and a zoom slider. Up to 2 overlay teams from the same pyramid.
-- **"Add to compare"** button (section 5.3).
+- **Pickers and date:** competition, season and team pickers, and the league page's date slider.
+- **Header:** position, points, goal difference, played, and form chips for the last 6 matches overall and the last 4 home and 4 away (three rows).
+- **Chart panel** with five views:
+  - league position;
+  - home-table and away-table positions;
+  - rolling form;
+  - goals for and against;
+  - the Elo journey across all seasons since 2016/17, with division bands.
 
-### Compare page
+The approved mockup is `design/team.html`; `04-team-page/spec.md` has the detail.
 
-League position by matchday for up to 6 teams from one league-season. The y axis is inverted (1st at the top), and a team's line ends at its last match. Teams come from the compare basket or a picker. A form table filtered to just those teams sits below the chart, with Overall/Home/Away tabs.
+### Matches page
 
-**Scope change from draft 2:** position is the only metric on the compare page. Elo lives on the team page, and points and goals are in the tables. This removes the metric picker, the hardest part of the old performance chart.
+- **Day strip:** seven days and a month grid. It runs forward only to the last day in co.uk's fixtures file, which is a few days ahead.
+- **Competition filter:** checkboxes per competition and per country.
+- **Match list:** each day's matches, grouped by competition, as accordion rows.
+- **Result details:** stats, odds and positions before and after the match.
+- **Fixture details:** the two teams side by side, with pre-match odds and an overlaid season chart.
+
+The approved mockup is `design/matches.html`; `05-matches-landing/spec.md` has the detail.
+
+Comparing teams covers only the fixtures in co.uk's window; football-data.co.uk publishes no further-ahead gameweeks.
 
 ### Effort (1 = an afternoon, 10 = several weeks; scaffolding not included)
 
 | Piece | Effort | Notes |
 |---|---|---|
-| Table and form endpoints (overall/home/away, as at date) | 3 | One Python function: matches before date → per-team rows. Form adds "last 6 / last 4" per team and the chip sequence. |
-| Table component with view, venue and slider | 3 | One component, one set of URL params. Prefetches neighbouring dates. |
-| Position-by-matchday endpoint and chart | 3 | Positions after each matchday per team; one ECharts option builder shared by team and compare pages. |
-| Team page | 4 | Mostly reuses the above. Elo journey is the one new chart. |
-| Compare page + basket | 2 | Position chart + filtered form table + Zustand basket. |
-| Landing page | 2 | Two aggregate queries, two charts. |
-
-Changing to form tables is a small overhaul. No code exists yet, and it simplifies the MVP: the free multi-metric chart (effort 6) becomes a position chart and a table that several pages share (about 3 + 3).
+| League page | 6 | Standings endpoint with all view figures; date bar; stats table with five views; top performers. |
+| Team page | 5 | Team season endpoint with three table positions per match; Elo endpoint; five-view chart panel. |
+| Matches page | 4 | Dates, day and match endpoints; day strip and filter; result and fixture details with the overlay chart. |
+| Landing page | 3 | Season metrics summary table and endpoint; Elo top 10 endpoint; metric chart; Elo list and explainer. |
 
 ### Extensions (in order)
 
@@ -124,7 +122,7 @@ compose.yaml
 |---|---|---|
 | **TanStack Query cache** | Data from the API | E0 2024/25 form table, home, as at 2025-02-01 |
 | **URL search params** | What the current page shows | `/league/E0?season=2024&view=form&venue=home&date=2025-02-01` |
-| **Zustand, persisted to `localStorage`** | What follows you between pages and visits | Compare basket, favourite teams, last-used league and venue, theme, recently viewed teams |
+| **Zustand, persisted to `localStorage`** | What follows you between pages and visits | Favourite teams, last-used league, season and venue, theme, recently viewed teams |
 | **Component state** | Transient UI | Slider position mid-drag, open dropdown |
 
 The store holds defaults, and the URL owns the current view. Opening `/league` with no params fills them from the store's last-used values; from then on the URL is the owner.
@@ -219,7 +217,7 @@ Each page...
   - positions by matchday;
   - team summary;
   - Elo journey;
-  - landing headlines.
+  - landing season metrics and Elo top 10.
 - `web/`: Vite + React + TypeScript; TanStack Router, TanStack Query, Zustand (persisted); generated API client; ECharts wrapper; the 4 pages; Tailwind + shadcn/ui components.
 - Vitest + React Testing Library tests: option builders, store, URL schemas, components (one pass at the end).
 - READMEs: current README moved to `scorecaster/readme.md`; new root README with the stats app, data credit and not-redistributed note (section 7).
@@ -261,9 +259,9 @@ A chunk file is that chunk's plan. It's used in three steps:
 |---|---|---|---|
 | 01 | [Design](01-design/spec.md) | Visual direction; brief and mockup for each MVP page | |
 | 02 | [Foundations](02-foundations/spec.md) | `app.db` build; FastAPI skeleton (competitions, seasons); Vite + React + TypeScript scaffold; generated API client; app shell with navigation, theme and Zustand store; ECharts wrapper; Docker Compose; root readme run instructions | 01 |
-| 03 | [League page](03-league-page/spec.md) | Table and form endpoints; table component with view, venue and date slider | 02 |
-| 04 | [Team page](04-team-page/spec.md) | Team summary, position-by-matchday and Elo journey endpoints; team page; compare basket | 03 |
-| 05 | [Compare and landing pages](05-compare-landing/spec.md) | Compare page; landing headlines; Playwright tests across the MVP; README screenshots | 04 |
+| 03 | [League page](03-league-page/spec.md) | Standings and season dates endpoints; date bar; stats table with five views; top performers | 02 |
+| 04 | [Team page](04-team-page/spec.md) | Teams, team season and Elo journey endpoints; pickers; team header; five-view chart panel | 03 |
+| 05 | [Matches and landing pages](05-matches-landing/spec.md) | Matches page; landing season metrics and Elo top 10; Playwright tests across the MVP; README screenshots | 04 |
 | 06 | Market section (Extension 1) | Market summary tables; calibration, margins, upsets; this week's fixtures with head-to-head | 05 |
 | 07 | MCP server (Extension 2) | Shared tool functions; MCP server | 05 |
 | 08 | Chat page (Extension 3) | Tool-use loop against the Claude API; chat page; `open_view` tool | 07 |

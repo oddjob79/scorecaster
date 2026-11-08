@@ -2,7 +2,7 @@
 
 ## Goal
 
-An approved visual direction and an approved HTML mockup for each of the four MVP pages (league, team, compare, landing), before any app code.
+An approved visual direction and an approved HTML mockup for each of the four MVP pages (league, team, matches, landing), before any app code.
 
 ## Why
 
@@ -17,7 +17,7 @@ An approved visual direction and an approved HTML mockup for each of the four MV
 
 ## Decisions
 
-- **Order:** visual direction, then league, team, compare and landing pages. The league page goes first because its table and form chips recur on the other pages. The landing page goes last because it summarises the others.
+- **Order:** visual direction, then league, team, Matches and landing pages. The league page goes first because its table and form chips recur on the other pages. The landing page goes last because it summarises the others.
 - **The brief is yours** and records the page's purpose and priorities. The mockup follows the brief.
 - **Viewport and theme:** each mockup is drawn at desktop (1280px) and phone (390px) width, in light and dark themes.
 - **Charts** in mockups are static SVG.
@@ -30,7 +30,7 @@ An approved visual direction and an approved HTML mockup for each of the four MV
 | 01 | [Visual direction](01-visual-direction.md) |
 | 02 | [League page](02-league-page.md) |
 | 03 | [Team page](03-team-page.md) |
-| 04 | [Compare page](04-compare-page.md) |
+| 04 | [Matches page](04-matches-page.md) |
 | 05 | [Landing page](05-landing-page.md) |
 
 This phase has no tests chunk: it produces no code.
@@ -39,12 +39,12 @@ This phase has no tests chunk: it produces no code.
 
 **Core**
 
-- [ ] brief template (01)
-- [ ] style tile and colour and type tokens (01)
-- [ ] league page brief and mockup (02)
-- [ ] team page brief and mockup (03)
-- [ ] compare page brief and mockup (04)
-- [ ] landing page brief and mockup (05)
+- [x] brief template (01)
+- [x] style tile and colour and type tokens (01)
+- [x] league page brief and mockup (02)
+- [x] team page brief and mockup (03)
+- [x] Matches page brief and mockup (04)
+- [x] landing page brief and mockup (05)
 
 **Optional** (ticked = written)
 
