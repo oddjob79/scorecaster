@@ -1,0 +1,439 @@
+<title>Scorecaster Style C</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Manrope:wght@400;600;700;800&display=swap">
+<style>
+/* Layout: floodlit. Each league tints its own pages; chunky stat tiles, big numerals, round pill chips. */
+:root {
+  --bg: #f4f5f8;
+  --surface: #ffffff;
+  --fg: #12141c;
+  --muted: #5e6475;
+  --line: #e2e4ea;
+  --league: #5a2fd1;
+  --league-ink: #4a22b8;
+  --on-league: #ffffff;
+  --win: #16a368;
+  --draw: #a3a8b6;
+  --loss: #e5484d;
+  --grid: #e8eaef;
+
+  --font-display: "Bricolage Grotesque", "Trebuchet MS", system-ui, sans-serif;
+  --font-body: "Manrope", "Segoe UI", system-ui, sans-serif;
+
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 32px; --s7: 56px;
+  --r-md: 12px; --r-lg: 20px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0f1016; --surface: #181a23; --fg: #f1f2f6; --muted: #9ba1b3; --line: #2a2d3a; --grid: #252836;
+    --win: #2fc183; --draw: #6f7486; --loss: #ff5c62;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0f1016; --surface: #181a23; --fg: #f1f2f6; --muted: #9ba1b3; --line: #2a2d3a; --grid: #252836;
+  --win: #2fc183; --draw: #6f7486; --loss: #ff5c62;
+}
+
+/* League tints: one accent per league, lighter in dark mode. */
+:root[data-league="laliga"] { --league: #d9531a; --league-ink: #b5420f; }
+:root[data-league="bundesliga"] { --league: #c81e2c; --league-ink: #a81622; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --league-ink: #a98cff; }
+  :root:not([data-theme="light"])[data-league="laliga"] { --league-ink: #ff8f5a; }
+  :root:not([data-theme="light"])[data-league="bundesliga"] { --league-ink: #ff6b75; }
+}
+:root[data-theme="dark"] { --league-ink: #a98cff; }
+:root[data-theme="dark"][data-league="laliga"] { --league-ink: #ff8f5a; }
+:root[data-theme="dark"][data-league="bundesliga"] { --league-ink: #ff6b75; }
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.55; }
+.soft { background: color-mix(in srgb, var(--league) 10%, var(--surface)); }
+.page {
+  max-width: 1120px; margin: 0 auto;
+  padding-block: var(--s6) var(--s7);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: var(--s6);
+}
+h1, h2, h3 { font-family: var(--font-display); margin: 0; text-wrap: balance; }
+p { margin: 0; }
+.num { font-variant-numeric: tabular-nums; }
+.eyebrow { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: var(--league-ink); }
+.label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+
+/* Hero band in the league colour */
+.band {
+  background: var(--league); color: var(--on-league); border-radius: var(--r-lg);
+  padding: var(--s6); display: grid; gap: var(--s4);
+}
+.band .eyebrow { color: color-mix(in srgb, var(--on-league) 80%, transparent); }
+.band h1 { font-size: 52px; font-weight: 800; line-height: 1; letter-spacing: -0.02em; }
+.band p { max-width: 60ch; color: color-mix(in srgb, var(--on-league) 85%, transparent); }
+.band-row { display: flex; flex-wrap: wrap; gap: var(--s3); align-items: center; justify-content: space-between; }
+.pills-on-band { display: inline-flex; gap: 6px; flex-wrap: wrap; }
+.pills-on-band button {
+  font: 700 13px var(--font-body); border-radius: 999px; padding: 6px 14px; cursor: pointer;
+  background: color-mix(in srgb, var(--on-league) 16%, transparent); color: var(--on-league); border: 1px solid transparent;
+}
+.pills-on-band button[aria-pressed="true"] { background: var(--on-league); color: var(--league); }
+
+section { display: grid; gap: var(--s4); }
+section > h2 { font-size: 24px; font-weight: 800; letter-spacing: -0.01em; }
+.grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: var(--s5); }
+.grid-2 > * { min-width: 0; }
+.panel { background: var(--surface); border-radius: var(--r-lg); padding: var(--s5); display: grid; gap: var(--s4); min-width: 0; }
+
+/* Palette */
+.swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: var(--s3); }
+.swatch { display: grid; gap: 6px; }
+.swatch .c { height: 64px; border-radius: var(--r-md); border: 1px solid var(--line); }
+.swatch b { font-size: 13px; }
+.swatch small { font-size: 12px; color: var(--muted); }
+
+/* Type */
+.type-row { display: grid; grid-template-columns: 110px 1fr; gap: var(--s3); align-items: baseline; padding-block: 10px; border-bottom: 1px solid var(--line); }
+.type-row:last-child { border-bottom: 0; }
+.t-xl { font-family: var(--font-display); font-size: 64px; font-weight: 800; line-height: 0.95; letter-spacing: -0.03em; color: var(--league-ink); }
+.t-h1 { font-family: var(--font-display); font-size: 32px; font-weight: 800; letter-spacing: -0.01em; }
+.t-h2 { font-family: var(--font-display); font-size: 22px; font-weight: 600; }
+.t-small { font-size: 13px; color: var(--muted); }
+
+/* Spacing */
+.space-row { display: grid; grid-template-columns: 50px 1fr; gap: var(--s3); align-items: center; }
+.space-bar { height: 12px; border-radius: 6px; background: var(--league); }
+
+/* Controls */
+.controls { display: flex; flex-wrap: wrap; gap: var(--s3); align-items: center; }
+.pills { display: inline-flex; gap: 4px; background: var(--bg); border-radius: 999px; padding: 4px; }
+.pills button { font: 700 13px var(--font-body); color: var(--muted); background: transparent; border: 0; border-radius: 999px; padding: 6px 14px; cursor: pointer; }
+.pills button[aria-pressed="true"] { background: var(--league); color: var(--on-league); }
+.btn { font: 800 14px var(--font-body); border-radius: 999px; padding: 10px 20px; cursor: pointer; border: 2px solid transparent; }
+.btn-primary { background: var(--league); color: var(--on-league); }
+.btn-primary:hover { filter: brightness(1.08); }
+.btn-secondary { background: transparent; color: var(--league-ink); border-color: var(--league); }
+.btn-secondary:hover { background: color-mix(in srgb, var(--league) 8%, transparent); }
+.btn-ghost { background: transparent; color: var(--muted); }
+.btn-ghost:hover { color: var(--fg); }
+button:focus-visible, select:focus-visible { outline: 3px solid var(--league); outline-offset: 2px; }
+.select { font: 700 14px var(--font-body); color: var(--fg); background: var(--bg); border: 0; border-radius: 999px; padding: 9px 16px; min-width: 0; }
+.date { font: 700 13px var(--font-body); color: var(--muted); }
+
+/* Form chips: round pills */
+.form { display: inline-flex; gap: 4px; }
+.f { width: 24px; height: 24px; border-radius: 999px; display: inline-grid; place-items: center; font: 800 11px var(--font-body); color: #fff; }
+.f.W { background: var(--win); } .f.D { background: var(--draw); } .f.L { background: var(--loss); }
+
+/* Table */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: separate; border-spacing: 0 4px; font-variant-numeric: tabular-nums; }
+th { text-align: right; font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; padding: 4px 10px; white-space: nowrap; }
+td { text-align: right; padding: 10px 10px; white-space: nowrap; background: var(--bg); }
+td:first-child { border-radius: var(--r-md) 0 0 var(--r-md); }
+td:last-child { border-radius: 0 var(--r-md) var(--r-md) 0; }
+th.l, td.l { text-align: left; }
+td.pos { font-family: var(--font-display); font-weight: 800; font-size: 18px; width: 40px; }
+td.team { font-weight: 800; }
+td.pts { font-family: var(--font-display); font-weight: 800; font-size: 18px; }
+tr.lead td { background: color-mix(in srgb, var(--league) 14%, var(--surface)); }
+tr.lead td.pos { color: var(--league-ink); }
+
+/* Stat tiles */
+.tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s3); }
+.tile { border-radius: var(--r-md); padding: var(--s4); display: grid; gap: 2px; }
+.tile b { font: 800 40px/1 var(--font-display); letter-spacing: -0.02em; color: var(--league-ink); }
+.tile span { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.form-rows { display: grid; grid-template-columns: 76px 1fr; gap: 10px var(--s3); align-items: center; }
+.team-head { display: flex; justify-content: space-between; gap: var(--s3); align-items: center; flex-wrap: wrap; }
+.team-head h3 { font-size: 32px; font-weight: 800; letter-spacing: -0.02em; }
+
+/* Chart */
+.chart svg { width: 100%; height: auto; display: block; }
+.legend { display: flex; flex-wrap: wrap; gap: var(--s4); font-size: 13px; color: var(--muted); }
+.legend i { display: inline-block; width: 14px; height: 14px; border-radius: 4px; margin-right: 6px; vertical-align: -2px; }
+.note { font-size: 13px; color: var(--muted); }
+
+@media (max-width: 480px) {
+  .band { padding: var(--s5); }
+  .band h1 { font-size: 38px; }
+  .t-xl { font-size: 48px; }
+  .type-row { grid-template-columns: 1fr; gap: var(--s1); }
+  .tile b { font-size: 30px; }
+}
+</style>
+
+<div class="page">
+  <div class="band">
+    <div class="band-row">
+      <span class="eyebrow">Style tile C · Floodlight</span>
+      <div class="pills-on-band" role="group" aria-label="Theme">
+        <button type="button" id="theme-light" aria-pressed="false">Light</button>
+        <button type="button" id="theme-dark" aria-pressed="false">Dark</button>
+      </div>
+    </div>
+    <h1>Every league in its own colour</h1>
+    <p>Bold and colourful. The league you are viewing tints the page: headers, actions, chart lines and highlights. Chunky stat tiles and round chips make the numbers the loudest thing on screen.</p>
+    <div class="pills-on-band" role="group" aria-label="League tint">
+      <button type="button" data-tint="pl" aria-pressed="true">Premier League</button>
+      <button type="button" data-tint="laliga" aria-pressed="false">La Liga</button>
+      <button type="button" data-tint="bundesliga" aria-pressed="false">Bundesliga</button>
+    </div>
+  </div>
+
+  <section>
+    <h2>Colour</h2>
+    <div class="panel">
+      <div class="swatches">
+        <div class="swatch"><div class="c" style="background:var(--bg)"></div><b>Background</b><small>Page ground, rows</small></div>
+        <div class="swatch"><div class="c" style="background:var(--surface)"></div><b>Surface</b><small>Panels</small></div>
+        <div class="swatch"><div class="c soft"></div><b>League soft</b><small>Highlights, tiles</small></div>
+        <div class="swatch"><div class="c" style="background:var(--fg)"></div><b>Text</b><small>Body and numbers</small></div>
+        <div class="swatch"><div class="c" style="background:var(--muted)"></div><b>Muted</b><small>Labels, axes</small></div>
+        <div class="swatch"><div class="c" style="background:var(--league)"></div><b>League</b><small>Changes per league</small></div>
+        <div class="swatch"><div class="c" style="background:var(--win)"></div><b>Win</b><small>W chip</small></div>
+        <div class="swatch"><div class="c" style="background:var(--draw)"></div><b>Draw</b><small>D chip</small></div>
+        <div class="swatch"><div class="c" style="background:var(--loss)"></div><b>Loss</b><small>L chip</small></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="grid-2">
+    <section>
+      <h2>Type</h2>
+      <div class="panel">
+        <div class="type-row"><span class="label">Display 64</span><span class="t-xl num">53 pts</span></div>
+        <div class="type-row"><span class="label">Heading 32</span><span class="t-h1">Premier League 2024/25</span></div>
+        <div class="type-row"><span class="label">Heading 22</span><span class="t-h2">Form · Home · 1 Feb 2025</span></div>
+        <div class="type-row"><span class="label">Body 15</span><span>Liverpool lead by six points with one game in hand.</span></div>
+        <div class="type-row"><span class="label">Small 13</span><span class="t-small">Computed from matches before 1 February 2025.</span></div>
+        <p class="note">Bricolage Grotesque / Manrope</p>
+      </div>
+    </section>
+
+    <section>
+      <h2>Spacing</h2>
+      <div class="panel">
+        <div class="space-row"><span class="label">4</span><div class="space-bar" style="width:4px"></div></div>
+        <div class="space-row"><span class="label">8</span><div class="space-bar" style="width:8px"></div></div>
+        <div class="space-row"><span class="label">12</span><div class="space-bar" style="width:12px"></div></div>
+        <div class="space-row"><span class="label">16</span><div class="space-bar" style="width:16px"></div></div>
+        <div class="space-row"><span class="label">24</span><div class="space-bar" style="width:24px"></div></div>
+        <div class="space-row"><span class="label">32</span><div class="space-bar" style="width:32px"></div></div>
+        <div class="space-row"><span class="label">56</span><div class="space-bar" style="width:56px"></div></div>
+        <p class="note">Radius 12px on rows and tiles, 20px on panels, full pills on controls and chips.</p>
+      </div>
+    </section>
+  </div>
+
+  <section>
+    <h2>League table</h2>
+    <div class="panel">
+      <div class="controls">
+        <select class="select" id="league-select" aria-label="League">
+          <option>Premier League</option><option>Championship</option><option>La Liga</option>
+        </select>
+        <div class="pills" role="group" aria-label="View">
+          <button type="button" aria-pressed="true">Table</button><button type="button" aria-pressed="false">Form</button>
+        </div>
+        <div class="pills" role="group" aria-label="Venue">
+          <button type="button" aria-pressed="true">Overall</button><button type="button" aria-pressed="false">Home</button><button type="button" aria-pressed="false">Away</button>
+        </div>
+        <span class="date num">As at 1 Feb 2025</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th class="l">#</th><th class="l">Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GF</th><th>GA</th><th>GD</th><th>Pts</th><th class="l">Form</th>
+          </tr></thead>
+          <tbody id="table-body"></tbody>
+        </table>
+      </div>
+      <p class="note">Premier League figures in every tint; only the colour changes. Top 8 shown, form is the last 6 matches, oldest to newest.</p>
+    </div>
+  </section>
+
+  <div class="grid-2">
+    <section>
+      <h2>Team card</h2>
+      <div class="panel">
+        <div class="team-head">
+          <div>
+            <div class="eyebrow">Premier League · 1 Feb 2025</div>
+            <h3>Liverpool</h3>
+          </div>
+          <button type="button" class="btn btn-secondary">Add to compare</button>
+        </div>
+        <div class="tiles">
+          <div class="tile soft"><b class="num">1st</b><span>Position</span></div>
+          <div class="tile soft"><b class="num">53</b><span>Points</span></div>
+          <div class="tile soft"><b class="num">+33</b><span>Goal diff</span></div>
+        </div>
+        <div class="form-rows">
+          <span class="label">Last 6</span><span class="form" data-form="WWDDWW"></span>
+          <span class="label">Home 4</span><span class="form" data-form="DWDW"></span>
+          <span class="label">Away 4</span><span class="form" data-form="WWDW"></span>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Buttons and select</h2>
+      <div class="panel">
+        <div class="controls">
+          <button type="button" class="btn btn-primary">Compare 3 teams</button>
+          <button type="button" class="btn btn-secondary">Copy link</button>
+          <button type="button" class="btn btn-ghost">Reset view</button>
+        </div>
+        <div class="controls">
+          <select class="select" id="season-select" aria-label="Season">
+            <option>2024/25</option><option>2023/24</option><option>2022/23</option>
+          </select>
+          <div class="pills" role="group" aria-label="Metric">
+            <button type="button" aria-pressed="true">Position</button><button type="button" aria-pressed="false">Elo</button>
+          </div>
+        </div>
+        <p class="note">Primary is the single main action on a view; outline and plain text buttons do the rest.</p>
+      </div>
+    </section>
+  </div>
+
+  <section>
+    <h2>Line chart</h2>
+    <div class="panel chart">
+      <div class="legend">
+        <span class="label" style="color:var(--fg)">Leeds · Elo at the end of each season</span>
+        <span><i class="soft" style="border:1px solid var(--line)"></i>Premier League season</span>
+        <span><i style="background:var(--bg);border:1px solid var(--line)"></i>Championship season</span>
+      </div>
+      <svg id="elo-chart" viewBox="0 0 720 280" role="img" aria-label="Leeds Elo at each season end, 2016/17 to 2026/27"></svg>
+      <p class="note">Elo uses a separate 1500-centred scale per division, so a promotion shows as a drop in the line, not a fall in quality. 2026/27 is the latest value so far.</p>
+    </div>
+  </section>
+</div>
+
+<script>
+const root = document.documentElement;
+
+// Theme toggle: sets data-theme on the root element; without a choice the viewer's theme applies.
+(function () {
+  const darkBtn = document.getElementById("theme-dark");
+  const lightBtn = document.getElementById("theme-light");
+  function current() {
+    const set = root.getAttribute("data-theme");
+    if (set) return set;
+    return matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  }
+  function sync() {
+    const t = current();
+    darkBtn.setAttribute("aria-pressed", String(t === "dark"));
+    lightBtn.setAttribute("aria-pressed", String(t === "light"));
+    drawChart();
+  }
+  darkBtn.addEventListener("click", () => { root.setAttribute("data-theme", "dark"); sync(); });
+  lightBtn.addEventListener("click", () => { root.setAttribute("data-theme", "light"); sync(); });
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", sync);
+  window.addEventListener("DOMContentLoaded", sync);
+  window.syncTheme = sync;
+})();
+
+// League tint switcher: sets data-league on the root element.
+document.querySelectorAll("[data-tint]").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const t = btn.dataset.tint;
+    if (t === "pl") root.removeAttribute("data-league"); else root.setAttribute("data-league", t);
+    document.querySelectorAll("[data-tint]").forEach(b => b.setAttribute("aria-pressed", String(b === btn)));
+    drawChart();
+  });
+});
+
+function renderForm(el, seq) {
+  el.innerHTML = "";
+  for (const r of seq) {
+    const s = document.createElement("span");
+    s.className = "f " + r;
+    s.textContent = r;
+    s.setAttribute("aria-label", r === "W" ? "Win" : r === "D" ? "Draw" : "Loss");
+    el.appendChild(s);
+  }
+}
+
+// Premier League table before 1 Feb 2025 (from data/scorecaster.db); form oldest to newest.
+const TABLE = [
+  ["Liverpool", 22, 16, 5, 1, 54, 21, 53, "WWDDWW"],
+  ["Arsenal", 23, 13, 8, 2, 44, 21, 47, "WWDWDW"],
+  ["Nott'm Forest", 23, 13, 5, 5, 33, 27, 44, "WWWDWL"],
+  ["Man City", 23, 12, 5, 6, 47, 30, 41, "DWWDWW"],
+  ["Newcastle", 23, 12, 5, 6, 41, 27, 41, "WWWWLW"],
+  ["Chelsea", 23, 11, 7, 5, 45, 30, 40, "LLDDWL"],
+  ["Bournemouth", 23, 11, 7, 5, 41, 26, 40, "DDWDWW"],
+  ["Aston Villa", 23, 10, 7, 6, 34, 35, 37, "LDWWDD"],
+];
+(function () {
+  const body = document.getElementById("table-body");
+  TABLE.forEach((r, i) => {
+    const [team, p, w, d, l, gf, ga, pts, form] = r;
+    const gd = gf - ga;
+    const tr = document.createElement("tr");
+    if (i === 0) tr.className = "lead";
+    tr.innerHTML =
+      `<td class="l pos">${i + 1}</td><td class="l team">${team}</td>` +
+      `<td>${p}</td><td>${w}</td><td>${d}</td><td>${l}</td><td>${gf}</td><td>${ga}</td>` +
+      `<td>${gd > 0 ? "+" + gd : gd}</td><td class="pts">${pts}</td><td class="l"><span class="form"></span></td>`;
+    renderForm(tr.querySelector(".form"), form);
+    body.appendChild(tr);
+  });
+  document.querySelectorAll("[data-form]").forEach(el => renderForm(el, el.dataset.form));
+})();
+
+// Leeds Elo at each season end (last pre-match value), with division per season.
+const ELO = [
+  ["16/17", "E1", 1560], ["17/18", "E1", 1462], ["18/19", "E1", 1580], ["19/20", "E1", 1663],
+  ["20/21", "E0", 1559], ["21/22", "E0", 1442], ["22/23", "E0", 1392],
+  ["23/24", "E1", 1644], ["24/25", "E1", 1719], ["25/26", "E0", 1550], ["26/27", "E0", 1542],
+];
+function css(name) { return getComputedStyle(root).getPropertyValue(name).trim(); }
+function drawChart() {
+  const svg = document.getElementById("elo-chart");
+  const W = 720, H = 280, L = 48, R = 16, T = 20, B = 36;
+  const yMin = 1350, yMax = 1750;
+  const step = (W - L - R) / ELO.length;
+  const x = i => L + step * (i + 0.5);
+  const y = v => T + (yMax - v) / (yMax - yMin) * (H - T - B);
+  const ns = "http://www.w3.org/2000/svg";
+  const font = "Manrope, sans-serif";
+  const league = css("--league");
+  svg.innerHTML = "";
+  const add = (tag, attrs, text) => {
+    const el = document.createElementNS(ns, tag);
+    for (const k in attrs) el.setAttribute(k, attrs[k]);
+    if (text != null) el.textContent = text;
+    svg.appendChild(el);
+    return el;
+  };
+  // Premier League seasons get a soft league-coloured band.
+  ELO.forEach((d, i) => {
+    if (d[1] === "E0") add("rect", { x: L + step * i, y: T, width: step, height: H - T - B, fill: league, "fill-opacity": 0.09 });
+  });
+  for (let v = yMin; v <= yMax; v += 100) {
+    add("line", { x1: L, x2: W - R, y1: y(v), y2: y(v), stroke: css("--grid"), "stroke-width": 1 });
+    add("text", { x: L - 8, y: y(v) + 4, "text-anchor": "end", "font-size": 12, fill: css("--muted"), "font-family": font }, v);
+  }
+  ELO.forEach((d, i) => add("text", {
+    x: x(i), y: H - 12, "text-anchor": "middle", "font-size": 12, "font-weight": 700, fill: css("--muted"), "font-family": font,
+  }, d[0]));
+  // Area fill under the line.
+  const pts = ELO.map((d, i) => `${x(i)},${y(d[2])}`);
+  add("polygon", { points: `${x(0)},${H - B} ${pts.join(" ")} ${x(ELO.length - 1)},${H - B}`, fill: league, "fill-opacity": 0.14 });
+  add("polyline", { points: pts.join(" "), fill: "none", stroke: league, "stroke-width": 3.5, "stroke-linejoin": "round", "stroke-linecap": "round" });
+  ELO.forEach((d, i) => {
+    const last = i === ELO.length - 1;
+    add("circle", { cx: x(i), cy: y(d[2]), r: last ? 7 : 4.5, fill: last ? league : css("--surface"), stroke: league, "stroke-width": 3 });
+  });
+  const li = ELO.length - 1;
+  add("text", { x: x(li), y: y(ELO[li][2]) - 14, "text-anchor": "middle", "font-size": 13, "font-weight": 800, fill: css("--fg"), "font-family": font }, ELO[li][2]);
+}
+</script>

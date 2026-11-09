@@ -1,0 +1,874 @@
+<title>Scorecaster League Page</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Manrope:wght@400;600;700;800&display=swap">
+<style>
+/* Layout: app bar, league header, date bar, then table (main) beside top-performer cards (aside). Tokens from design/style.md. */
+:root {
+  --bg: #f4f5f8; --surface: #ffffff; --fg: #12141c; --muted: #5e6475; --line: #e2e4ea; --grid: #e8eaef;
+  --accent: #5a2fd1; --accent-ink: #4a22b8; --on-accent: #ffffff;
+  --win: #16a368; --draw: #a3a8b6; --loss: #e5484d;
+  --font-display: "Bricolage Grotesque", "Trebuchet MS", system-ui, sans-serif;
+  --font-body: "Manrope", "Segoe UI", system-ui, sans-serif;
+  --r-md: 12px; --r-lg: 20px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0f1016; --surface: #181a23; --fg: #f1f2f6; --muted: #9ba1b3; --line: #2a2d3a; --grid: #252836;
+    --accent-ink: #a98cff; --win: #2fc183; --draw: #6f7486; --loss: #ff5c62;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0f1016; --surface: #181a23; --fg: #f1f2f6; --muted: #9ba1b3; --line: #2a2d3a; --grid: #252836;
+  --accent-ink: #a98cff; --win: #2fc183; --draw: #6f7486; --loss: #ff5c62;
+}
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.55; }
+h1, h2, h3 { font-family: var(--font-display); margin: 0; text-wrap: balance; }
+p { margin: 0; }
+button, select, input { font-family: inherit; }
+.num { font-variant-numeric: tabular-nums; }
+.soft { background: color-mix(in srgb, var(--accent) 10%, var(--surface)); }
+.label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.eyebrow { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent-ink); }
+.gutter {
+  max-width: 1240px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+/* App bar */
+.appbar { background: var(--surface); border-bottom: 1px solid var(--line); }
+.appbar .gutter { display: flex; align-items: center; gap: 24px; padding-block: 12px; flex-wrap: wrap; }
+.brand { font-family: var(--font-display); font-weight: 800; font-size: 20px; letter-spacing: -0.02em; }
+.brand span { color: var(--accent-ink); }
+.nav { display: flex; gap: 4px; flex: 1; flex-wrap: wrap; }
+.nav a { color: var(--muted); text-decoration: none; font-weight: 700; padding: 6px 12px; border-radius: 999px; }
+.nav a[aria-current="page"] { color: var(--fg); background: var(--bg); }
+.nav a:hover { color: var(--fg); }
+
+/* Pills and selects */
+.pills { display: inline-flex; gap: 4px; background: var(--bg); border-radius: 999px; padding: 4px; flex-wrap: wrap; }
+.panel .pills { background: var(--bg); }
+.appbar .pills { background: var(--bg); }
+.pills button { font: 700 13px var(--font-body); color: var(--muted); background: transparent; border: 0; border-radius: 999px; padding: 6px 14px; cursor: pointer; }
+.pills button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
+.select { font: 700 14px var(--font-body); color: var(--fg); background: var(--surface); border: 0; border-radius: 999px; padding: 9px 16px; min-width: 0; }
+.icon-btn {
+  width: 36px; height: 36px; border-radius: 999px; border: 2px solid var(--accent); background: transparent;
+  color: var(--accent-ink); font: 800 16px var(--font-body); cursor: pointer; display: inline-grid; place-items: center; flex: none;
+}
+.icon-btn:disabled { opacity: 0.35; cursor: default; }
+
+main.gutter { display: grid; gap: 20px; padding-block: 24px 56px; }
+
+/* League header */
+.league-head { display: flex; flex-wrap: wrap; gap: 16px; align-items: end; justify-content: space-between; }
+.league-head h1 { font-size: 52px; font-weight: 800; line-height: 1; letter-spacing: -0.02em; }
+.league-head .pickers { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* Date bar */
+.datebar { background: var(--surface); border-radius: var(--r-lg); padding: 16px 20px; display: grid; gap: 10px; }
+.datebar-top { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px; }
+.as-of { font-family: var(--font-display); font-weight: 800; font-size: 24px; letter-spacing: -0.01em; }
+.as-of small { font-family: var(--font-body); font-size: 13px; font-weight: 600; color: var(--muted); margin-left: 6px; letter-spacing: 0; }
+.slider-row { display: flex; align-items: center; gap: 12px; }
+.slider-row input[type="range"] { flex: 1; min-width: 0; accent-color: var(--accent); height: 28px; }
+.ticks { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); padding-inline: 48px; }
+
+/* Main grid */
+.layout { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 20px; align-items: start; }
+@media (max-width: 1000px) { .layout { grid-template-columns: 1fr; } }
+.panel { background: var(--surface); border-radius: var(--r-lg); padding: 20px; display: grid; gap: 14px; min-width: 0; }
+.panel-head { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
+.panel-head h2 { font-size: 24px; font-weight: 800; letter-spacing: -0.01em; }
+.controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+
+/* Table */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: separate; border-spacing: 0 4px; font-variant-numeric: tabular-nums; }
+th { text-align: right; font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; padding: 4px 8px; white-space: nowrap; }
+th button { all: unset; cursor: pointer; }
+th button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+th[aria-sort="descending"] button::after { content: " ▼"; font-size: 9px; }
+th[aria-sort="ascending"] button::after { content: " ▲"; font-size: 9px; }
+th[aria-sort] { color: var(--accent-ink); }
+td { text-align: right; padding: 9px 8px; white-space: nowrap; background: var(--bg); }
+td:first-child { border-radius: var(--r-md) 0 0 var(--r-md); }
+td:last-child { border-radius: 0 var(--r-md) var(--r-md) 0; }
+th.l, td.l { text-align: left; }
+td.pos { font-family: var(--font-display); font-weight: 800; font-size: 17px; width: 36px; }
+td.team { font-weight: 800; }
+td.key { font-family: var(--font-display); font-weight: 800; font-size: 17px; }
+tr.lead td { background: color-mix(in srgb, var(--accent) 14%, var(--surface)); }
+tr.lead td.pos { color: var(--accent-ink); }
+.note { font-size: 13px; color: var(--muted); }
+
+/* Form chips */
+.form { display: inline-flex; gap: 4px; }
+.f { width: 22px; height: 22px; border-radius: 999px; display: inline-grid; place-items: center; font: 800 11px var(--font-body); color: #fff; }
+.f.W { background: var(--win); } .f.D { background: var(--draw); } .f.L { background: var(--loss); }
+
+/* Top performers */
+.aside { display: grid; gap: 12px; }
+.aside-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.aside-head h2 { font-size: 24px; font-weight: 800; letter-spacing: -0.01em; }
+.aside-nav { display: flex; gap: 6px; align-items: center; }
+.cards { display: grid; gap: 12px; }
+@media (max-width: 1000px) { .cards { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); } }
+.pcard { border-radius: var(--r-lg); padding: 16px; display: grid; gap: 6px; background: var(--surface); }
+.pcard .metric { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.pcard .who { font-family: var(--font-display); font-size: 22px; font-weight: 800; letter-spacing: -0.01em; line-height: 1.15; }
+.pcard .value { display: flex; align-items: baseline; gap: 8px; }
+.pcard .value b { font: 800 36px/1 var(--font-display); color: var(--accent-ink); letter-spacing: -0.02em; }
+.pcard .value span { font-size: 13px; color: var(--muted); font-weight: 600; }
+.pcard.lead-card { background: color-mix(in srgb, var(--accent) 10%, var(--surface)); }
+.dots { display: flex; gap: 6px; justify-content: center; }
+.dots span { width: 8px; height: 8px; border-radius: 999px; background: var(--line); }
+.dots span.on { background: var(--accent); }
+.pause { font: 700 12px var(--font-body); color: var(--muted); background: transparent; border: 0; cursor: pointer; padding: 4px 6px; }
+
+@media (max-width: 560px) {
+  .league-head h1 { font-size: 38px; }
+  .as-of { font-size: 20px; }
+  .ticks { padding-inline: 0; }
+  .panel { padding: 14px; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+
+<header class="appbar">
+  <div class="gutter">
+    <div class="brand">Score<span>caster</span></div>
+    <nav class="nav" aria-label="Main">
+      <a href="#" aria-current="page">Leagues</a>
+      <a href="#">Teams</a>
+      <a href="#">Compare</a>
+    </nav>
+    <div class="pills" role="group" aria-label="Theme">
+      <button type="button" id="theme-light" aria-pressed="false">Light</button>
+      <button type="button" id="theme-dark" aria-pressed="false">Dark</button>
+    </div>
+  </div>
+</header>
+
+<main class="gutter">
+  <div class="league-head">
+    <div>
+      <div class="eyebrow">England · Tier 1</div>
+      <h1>Premier League</h1>
+    </div>
+    <div class="pickers">
+      <select class="select" id="league-picker" aria-label="League">
+        <option>Premier League</option><option>Championship</option><option>League One</option><option>La Liga</option><option>Bundesliga</option>
+      </select>
+      <select class="select" id="season-picker" aria-label="Season">
+        <option>2024/25</option><option>2023/24</option><option>2022/23</option>
+      </select>
+    </div>
+  </div>
+
+  <section class="datebar" aria-label="Date">
+    <div class="datebar-top">
+      <div class="as-of num" id="as-of" aria-live="polite"></div>
+      <div class="label" id="played"></div>
+    </div>
+    <div class="slider-row">
+      <button type="button" class="icon-btn" id="prev-day" aria-label="Previous matchday">‹</button>
+      <input type="range" id="date-slider" min="0" max="0" step="1" aria-label="Date">
+      <button type="button" class="icon-btn" id="next-day" aria-label="Next matchday">›</button>
+    </div>
+    <div class="ticks num" id="ticks"></div>
+  </section>
+
+  <div class="layout">
+    <section class="panel" aria-label="Table">
+      <div class="panel-head">
+        <h2 id="view-title">League table</h2>
+        <div class="pills" role="group" aria-label="Venue" id="venue-pills">
+          <button type="button" data-venue="overall" aria-pressed="true">Overall</button>
+          <button type="button" data-venue="home" aria-pressed="false">Home</button>
+          <button type="button" data-venue="away" aria-pressed="false">Away</button>
+        </div>
+      </div>
+      <div class="controls">
+        <span class="label">Show</span>
+        <div class="pills" role="group" aria-label="Statistic" id="view-pills">
+          <button type="button" data-view="table" aria-pressed="true">Table</button>
+          <button type="button" data-view="form" aria-pressed="false">Form</button>
+          <button type="button" data-view="goals" aria-pressed="false">Goals</button>
+          <button type="button" data-view="shots" aria-pressed="false">Shots</button>
+          <button type="button" data-view="discipline" aria-pressed="false">Discipline</button>
+        </div>
+      </div>
+      <div class="table-wrap"><table id="stats-table"></table></div>
+      <p class="note" id="table-note"></p>
+    </section>
+
+    <aside class="aside" aria-label="Top performers">
+      <div class="aside-head">
+        <h2>Top performers</h2>
+        <div class="aside-nav">
+          <button type="button" class="pause" id="pause">Pause</button>
+          <button type="button" class="icon-btn" id="prev-cards" aria-label="Previous cards">‹</button>
+          <button type="button" class="icon-btn" id="next-cards" aria-label="Next cards">›</button>
+        </div>
+      </div>
+      <div class="cards" id="cards" aria-live="polite"></div>
+      <div class="dots" id="dots"></div>
+    </aside>
+  </div>
+</main>
+
+<script>
+// Premier League 2024/25 finished matches with stats, from data/scorecaster.db.
+const MATCHES =[{"d":"2024-08-16","h":"Man United","a":"Fulham","hg":1,"ag":0,"hs":14,"as_":10,"hst":5,"ast":2,"hc":7,"ac":8,"hf":12,"af":10,"hy":2,"ay":3,"hr":0,"ar":0},
+{"d":"2024-08-17","h":"Arsenal","a":"Wolves","hg":2,"ag":0,"hs":18,"as_":9,"hst":6,"ast":3,"hc":8,"ac":2,"hf":17,"af":14,"hy":2,"ay":2,"hr":0,"ar":0},
+{"d":"2024-08-17","h":"Everton","a":"Brighton","hg":0,"ag":3,"hs":9,"as_":10,"hst":1,"ast":5,"hc":1,"ac":5,"hf":8,"af":8,"hy":1,"ay":1,"hr":1,"ar":0},
+{"d":"2024-08-17","h":"Ipswich","a":"Liverpool","hg":0,"ag":2,"hs":7,"as_":18,"hst":2,"ast":5,"hc":2,"ac":10,"hf":9,"af":18,"hy":3,"ay":1,"hr":0,"ar":0},
+{"d":"2024-08-17","h":"Newcastle","a":"Southampton","hg":1,"ag":0,"hs":3,"as_":19,"hst":1,"ast":4,"hc":3,"ac":12,"hf":15,"af":16,"hy":2,"ay":4,"hr":1,"ar":0},
+{"d":"2024-08-17","h":"Nott'm Forest","a":"Bournemouth","hg":1,"ag":1,"hs":14,"as_":13,"hst":8,"ast":4,"hc":2,"ac":6,"hf":17,"af":8,"hy":1,"ay":3,"hr":0,"ar":0},
+{"d":"2024-08-17","h":"West Ham","a":"Aston Villa","hg":1,"ag":2,"hs":14,"as_":15,"hst":3,"ast":3,"hc":5,"ac":3,"hf":18,"af":11,"hy":1,"ay":2,"hr":0,"ar":0},
+{"d":"2024-08-18","h":"Brentford","a":"Crystal Palace","hg":2,"ag":1,"hs":9,"as_":14,"hst":5,"ast":6,"hc":4,"ac":7,"hf":6,"af":15,"hy":1,"ay":5,"hr":0,"ar":0},
+{"d":"2024-08-18","h":"Chelsea","a":"Man City","hg":0,"ag":2,"hs":10,"as_":11,"hst":3,"ast":5,"hc":4,"ac":3,"hf":12,"af":9,"hy":1,"ay":1,"hr":0,"ar":0},
+{"d":"2024-08-19","h":"Leicester","a":"Tottenham","hg":1,"ag":1,"hs":7,"as_":15,"hst":3,"ast":7,"hc":2,"ac":13,"hf":11,"af":12,"hy":1,"ay":1,"hr":0,"ar":0},
+{"d":"2024-08-24","h":"Aston Villa","a":"Arsenal","hg":0,"ag":2,"hs":11,"as_":9,"hst":3,"ast":4,"hc":4,"ac":1,"hf":8,"af":15,"hy":1,"ay":3,"hr":0,"ar":0},
+{"d":"2024-08-24","h":"Brighton","a":"Man United","hg":2,"ag":1,"hs":14,"as_":11,"hst":5,"ast":4,"hc":4,"ac":4,"hf":9,"af":13,"hy":1,"ay":2,"hr":0,"ar":0},
+{"d":"2024-08-24","h":"Crystal Palace","a":"West Ham","hg":0,"ag":2,"hs":14,"as_":18,"hst":2,"ast":3,"hc":3,"ac":3,"hf":9,"af":17,"hy":1,"ay":1,"hr":0,"ar":0},
+{"d":"2024-08-24","h":"Fulham","a":"Leicester","hg":2,"ag":1,"hs":18,"as_":10,"hst":6,"ast":4,"hc":7,"ac":5,"hf":14,"af":13,"hy":2,"ay":2,"hr":0,"ar":0},
+{"d":"2024-08-24","h":"Man City","a":"Ipswich","hg":4,"ag":1,"hs":14,"as_":1,"hst":5,"ast":1,"hc":10,"ac":1,"hf":4,"af":15,"hy":2,"ay":3,"hr":0,"ar":0},
+{"d":"2024-08-24","h":"Southampton","a":"Nott'm Forest","hg":0,"ag":1,"hs":5,"as_":23,"hst":1,"ast":8,"hc":4,"ac":10,"hf":14,"af":14,"hy":3,"ay":3,"hr":0,"ar":0},
+{"d":"2024-08-24","h":"Tottenham","a":"Everton","hg":4,"ag":0,"hs":13,"as_":10,"hst":7,"ast":1,"hc":12,"ac":5,"hf":11,"af":15,"hy":0,"ay":0,"hr":0,"ar":0},
+{"d":"2024-08-25","h":"Bournemouth","a":"Newcastle","hg":1,"ag":1,"hs":16,"as_":14,"hst":4,"ast":5,"hc":8,"ac":9,"hf":19,"af":8,"hy":2,"ay":2,"hr":0,"ar":0},
+{"d":"2024-08-25","h":"Liverpool","a":"Brentford","hg":2,"ag":0,"hs":19,"as_":8,"hst":8,"ast":2,"hc":9,"ac":4,"hf":10,"af":7,"hy":2,"ay":3,"hr":0,"ar":0},
+{"d":"2024-08-25","h":"Wolves","a":"Chelsea","hg":2,"ag":6,"hs":12,"as_":14,"hst":4,"ast":8,"hc":5,"ac":5,"hf":13,"af":13,"hy":2,"ay":3,"hr":0,"ar":0},
+{"d":"2024-08-31","h":"Arsenal","a":"Brighton","hg":1,"ag":1,"hs":11,"as_":22,"hst":7,"ast":4,"hc":3,"ac":7,"hf":12,"af":7,"hy":3,"ay":2,"hr":1,"ar":0},
+{"d":"2024-08-31","h":"Brentford","a":"Southampton","hg":3,"ag":1,"hs":20,"as_":18,"hst":7,"ast":6,"hc":2,"ac":8,"hf":10,"af":7,"hy":2,"ay":1,"hr":0,"ar":0},
+{"d":"2024-08-31","h":"Everton","a":"Bournemouth","hg":2,"ag":3,"hs":18,"as_":17,"hst":8,"ast":7,"hc":8,"ac":4,"hf":6,"af":1,"hy":2,"ay":1,"hr":0,"ar":0},
+{"d":"2024-08-31","h":"Ipswich","a":"Fulham","hg":1,"ag":1,"hs":11,"as_":9,"hst":4,"ast":4,"hc":8,"ac":6,"hf":15,"af":15,"hy":2,"ay":3,"hr":0,"ar":0},
+{"d":"2024-08-31","h":"Leicester","a":"Aston Villa","hg":1,"ag":2,"hs":9,"as_":10,"hst":3,"ast":5,"hc":1,"ac":4,"hf":13,"af":21,"hy":4,"ay":5,"hr":0,"ar":0},
+{"d":"2024-08-31","h":"Nott'm Forest","a":"Wolves","hg":1,"ag":1,"hs":16,"as_":11,"hst":5,"ast":3,"hc":7,"ac":3,"hf":15,"af":18,"hy":3,"ay":4,"hr":0,"ar":0},
+{"d":"2024-08-31","h":"West Ham","a":"Man City","hg":1,"ag":3,"hs":10,"as_":23,"hst":2,"ast":8,"hc":3,"ac":11,"hf":10,"af":3,"hy":3,"ay":2,"hr":0,"ar":0},
+{"d":"2024-09-01","h":"Chelsea","a":"Crystal Palace","hg":1,"ag":1,"hs":13,"as_":9,"hst":7,"ast":3,"hc":4,"ac":5,"hf":9,"af":13,"hy":4,"ay":2,"hr":0,"ar":0},
+{"d":"2024-09-01","h":"Man United","a":"Liverpool","hg":0,"ag":3,"hs":8,"as_":11,"hst":3,"ast":3,"hc":5,"ac":2,"hf":7,"af":7,"hy":4,"ay":1,"hr":0,"ar":0},
+{"d":"2024-09-01","h":"Newcastle","a":"Tottenham","hg":2,"ag":1,"hs":9,"as_":20,"hst":3,"ast":6,"hc":7,"ac":12,"hf":16,"af":13,"hy":4,"ay":4,"hr":0,"ar":0},
+{"d":"2024-09-14","h":"Aston Villa","a":"Everton","hg":3,"ag":2,"hs":17,"as_":6,"hst":8,"ast":2,"hc":6,"ac":2,"hf":10,"af":12,"hy":1,"ay":4,"hr":0,"ar":0},
+{"d":"2024-09-14","h":"Bournemouth","a":"Chelsea","hg":0,"ag":1,"hs":19,"as_":10,"hst":7,"ast":3,"hc":6,"ac":3,"hf":16,"af":9,"hy":6,"ay":8,"hr":0,"ar":0},
+{"d":"2024-09-14","h":"Brighton","a":"Ipswich","hg":0,"ag":0,"hs":21,"as_":6,"hst":6,"ast":1,"hc":9,"ac":2,"hf":14,"af":16,"hy":4,"ay":3,"hr":0,"ar":0},
+{"d":"2024-09-14","h":"Crystal Palace","a":"Leicester","hg":2,"ag":2,"hs":20,"as_":9,"hst":4,"ast":4,"hc":5,"ac":2,"hf":11,"af":15,"hy":0,"ay":3,"hr":0,"ar":0},
+{"d":"2024-09-14","h":"Fulham","a":"West Ham","hg":1,"ag":1,"hs":21,"as_":11,"hst":5,"ast":3,"hc":3,"ac":2,"hf":15,"af":18,"hy":2,"ay":3,"hr":0,"ar":0},
+{"d":"2024-09-14","h":"Liverpool","a":"Nott'm Forest","hg":0,"ag":1,"hs":14,"as_":5,"hst":5,"ast":3,"hc":7,"ac":2,"hf":15,"af":6,"hy":4,"ay":4,"hr":0,"ar":0},
+{"d":"2024-09-14","h":"Man City","a":"Brentford","hg":2,"ag":1,"hs":18,"as_":8,"hst":7,"ast":5,"hc":12,"ac":3,"hf":9,"af":3,"hy":3,"ay":1,"hr":0,"ar":0},
+{"d":"2024-09-14","h":"Southampton","a":"Man United","hg":0,"ag":3,"hs":6,"as_":20,"hst":4,"ast":10,"hc":0,"ac":7,"hf":11,"af":14,"hy":1,"ay":4,"hr":1,"ar":0},
+{"d":"2024-09-15","h":"Tottenham","a":"Arsenal","hg":0,"ag":1,"hs":15,"as_":7,"hst":5,"ast":4,"hc":7,"ac":6,"hf":13,"af":10,"hy":5,"ay":3,"hr":0,"ar":0},
+{"d":"2024-09-15","h":"Wolves","a":"Newcastle","hg":1,"ag":2,"hs":12,"as_":14,"hst":5,"ast":6,"hc":4,"ac":7,"hf":17,"af":6,"hy":3,"ay":3,"hr":0,"ar":0},
+{"d":"2024-09-21","h":"Aston Villa","a":"Wolves","hg":3,"ag":1,"hs":9,"as_":10,"hst":4,"ast":4,"hc":6,"ac":5,"hf":11,"af":16,"hy":3,"ay":6,"hr":0,"ar":0},
+{"d":"2024-09-21","h":"Crystal Palace","a":"Man United","hg":0,"ag":0,"hs":9,"as_":15,"hst":4,"ast":6,"hc":4,"ac":11,"hf":7,"af":12,"hy":3,"ay":1,"hr":0,"ar":0},
+{"d":"2024-09-21","h":"Fulham","a":"Newcastle","hg":3,"ag":1,"hs":22,"as_":15,"hst":11,"ast":4,"hc":6,"ac":0,"hf":16,"af":8,"hy":6,"ay":0,"hr":0,"ar":0},
+{"d":"2024-09-21","h":"Leicester","a":"Everton","hg":1,"ag":1,"hs":12,"as_":16,"hst":2,"ast":5,"hc":6,"ac":1,"hf":11,"af":12,"hy":1,"ay":2,"hr":0,"ar":0},
+{"d":"2024-09-21","h":"Liverpool","a":"Bournemouth","hg":3,"ag":0,"hs":19,"as_":19,"hst":13,"ast":6,"hc":3,"ac":9,"hf":10,"af":12,"hy":1,"ay":4,"hr":0,"ar":0},
+{"d":"2024-09-21","h":"Southampton","a":"Ipswich","hg":1,"ag":1,"hs":11,"as_":13,"hst":3,"ast":6,"hc":2,"ac":10,"hf":16,"af":16,"hy":4,"ay":4,"hr":0,"ar":0},
+{"d":"2024-09-21","h":"Tottenham","a":"Brentford","hg":3,"ag":1,"hs":23,"as_":6,"hst":10,"ast":6,"hc":9,"ac":4,"hf":11,"af":9,"hy":3,"ay":1,"hr":0,"ar":0},
+{"d":"2024-09-21","h":"West Ham","a":"Chelsea","hg":0,"ag":3,"hs":15,"as_":12,"hst":7,"ast":5,"hc":6,"ac":5,"hf":17,"af":9,"hy":5,"ay":2,"hr":0,"ar":0},
+{"d":"2024-09-22","h":"Brighton","a":"Nott'm Forest","hg":2,"ag":2,"hs":14,"as_":4,"hst":3,"ast":3,"hc":9,"ac":1,"hf":12,"af":11,"hy":3,"ay":4,"hr":0,"ar":1},
+{"d":"2024-09-22","h":"Man City","a":"Arsenal","hg":2,"ag":2,"hs":33,"as_":5,"hst":11,"ast":3,"hc":8,"ac":2,"hf":7,"af":10,"hy":3,"ay":4,"hr":0,"ar":1},
+{"d":"2024-09-28","h":"Arsenal","a":"Leicester","hg":4,"ag":2,"hs":36,"as_":5,"hst":16,"ast":3,"hc":17,"ac":0,"hf":11,"af":6,"hy":2,"ay":4,"hr":0,"ar":0},
+{"d":"2024-09-28","h":"Brentford","a":"West Ham","hg":1,"ag":1,"hs":8,"as_":19,"hst":3,"ast":3,"hc":7,"ac":7,"hf":2,"af":11,"hy":2,"ay":3,"hr":0,"ar":0},
+{"d":"2024-09-28","h":"Chelsea","a":"Brighton","hg":4,"ag":2,"hs":15,"as_":15,"hst":7,"ast":5,"hc":8,"ac":2,"hf":11,"af":8,"hy":3,"ay":2,"hr":0,"ar":0},
+{"d":"2024-09-28","h":"Everton","a":"Crystal Palace","hg":2,"ag":1,"hs":8,"as_":17,"hst":2,"ast":5,"hc":5,"ac":8,"hf":13,"af":11,"hy":2,"ay":1,"hr":0,"ar":0},
+{"d":"2024-09-28","h":"Newcastle","a":"Man City","hg":1,"ag":1,"hs":11,"as_":16,"hst":4,"ast":6,"hc":5,"ac":6,"hf":14,"af":10,"hy":4,"ay":4,"hr":0,"ar":0},
+{"d":"2024-09-28","h":"Nott'm Forest","a":"Fulham","hg":0,"ag":1,"hs":11,"as_":14,"hst":1,"ast":2,"hc":6,"ac":5,"hf":11,"af":15,"hy":2,"ay":4,"hr":0,"ar":0},
+{"d":"2024-09-28","h":"Wolves","a":"Liverpool","hg":1,"ag":2,"hs":8,"as_":10,"hst":3,"ast":6,"hc":2,"ac":10,"hf":16,"af":8,"hy":2,"ay":3,"hr":0,"ar":0},
+{"d":"2024-09-29","h":"Ipswich","a":"Aston Villa","hg":2,"ag":2,"hs":15,"as_":7,"hst":5,"ast":3,"hc":10,"ac":0,"hf":10,"af":14,"hy":4,"ay":1,"hr":0,"ar":0},
+{"d":"2024-09-29","h":"Man United","a":"Tottenham","hg":0,"ag":3,"hs":11,"as_":24,"hst":2,"ast":10,"hc":5,"ac":3,"hf":16,"af":14,"hy":5,"ay":3,"hr":1,"ar":0},
+{"d":"2024-09-30","h":"Bournemouth","a":"Southampton","hg":3,"ag":1,"hs":14,"as_":9,"hst":6,"ast":3,"hc":7,"ac":4,"hf":19,"af":12,"hy":2,"ay":5,"hr":0,"ar":0},
+{"d":"2024-10-05","h":"Arsenal","a":"Southampton","hg":3,"ag":1,"hs":29,"as_":8,"hst":6,"ast":2,"hc":13,"ac":1,"hf":10,"af":9,"hy":0,"ay":3,"hr":0,"ar":0},
+{"d":"2024-10-05","h":"Brentford","a":"Wolves","hg":5,"ag":3,"hs":19,"as_":17,"hst":12,"ast":6,"hc":10,"ac":3,"hf":9,"af":10,"hy":2,"ay":3,"hr":0,"ar":0},
+{"d":"2024-10-05","h":"Crystal Palace","a":"Liverpool","hg":0,"ag":1,"hs":9,"as_":16,"hst":5,"ast":4,"hc":3,"ac":8,"hf":7,"af":15,"hy":4,"ay":2,"hr":0,"ar":0},
+{"d":"2024-10-05","h":"Everton","a":"Newcastle","hg":0,"ag":0,"hs":8,"as_":14,"hst":2,"ast":3,"hc":0,"ac":10,"hf":12,"af":8,"hy":1,"ay":2,"hr":0,"ar":0},
+{"d":"2024-10-05","h":"Leicester","a":"Bournemouth","hg":1,"ag":0,"hs":6,"as_":17,"hst":2,"ast":2,"hc":0,"ac":9,"hf":12,"af":14,"hy":4,"ay":1,"hr":0,"ar":0},
+{"d":"2024-10-05","h":"Man City","a":"Fulham","hg":3,"ag":2,"hs":20,"as_":11,"hst":7,"ast":4,"hc":8,"ac":3,"hf":4,"af":10,"hy":2,"ay":1,"hr":0,"ar":0},
+{"d":"2024-10-05","h":"West Ham","a":"Ipswich","hg":4,"ag":1,"hs":23,"as_":9,"hst":13,"ast":2,"hc":5,"ac":5,"hf":12,"af":6,"hy":0,"ay":1,"hr":0,"ar":0},
+{"d":"2024-10-06","h":"Aston Villa","a":"Man United","hg":0,"ag":0,"hs":11,"as_":10,"hst":1,"ast":4,"hc":6,"ac":3,"hf":12,"af":11,"hy":1,"ay":5,"hr":0,"ar":0},
+{"d":"2024-10-06","h":"Brighton","a":"Tottenham","hg":3,"ag":2,"hs":11,"as_":13,"hst":4,"ast":3,"hc":4,"ac":7,"hf":14,"af":10,"hy":2,"ay":2,"hr":0,"ar":0},
+{"d":"2024-10-06","h":"Chelsea","a":"Nott'm Forest","hg":1,"ag":1,"hs":22,"as_":16,"hst":8,"ast":9,"hc":11,"ac":3,"hf":12,"af":11,"hy":6,"ay":2,"hr":0,"ar":1},
+{"d":"2024-10-19","h":"Bournemouth","a":"Arsenal","hg":2,"ag":0,"hs":13,"as_":6,"hst":4,"ast":1,"hc":7,"ac":4,"hf":12,"af":11,"hy":1,"ay":1,"hr":0,"ar":1},
+{"d":"2024-10-19","h":"Fulham","a":"Aston Villa","hg":1,"ag":3,"hs":10,"as_":14,"hst":4,"ast":5,"hc":6,"ac":11,"hf":8,"af":11,"hy":3,"ay":3,"hr":1,"ar":1},
+{"d":"2024-10-19","h":"Ipswich","a":"Everton","hg":0,"ag":2,"hs":13,"as_":11,"hst":2,"ast":8,"hc":5,"ac":8,"hf":12,"af":10,"hy":1,"ay":1,"hr":0,"ar":0},
+{"d":"2024-10-19","h":"Man United","a":"Brentford","hg":2,"ag":1,"hs":23,"as_":8,"hst":11,"ast":2,"hc":9,"ac":2,"hf":14,"af":5,"hy":2,"ay":2,"hr":0,"ar":0},
+{"d":"2024-10-19","h":"Newcastle","a":"Brighton","hg":0,"ag":1,"hs":21,"as_":10,"hst":6,"ast":5,"hc":9,"ac":4,"hf":11,"af":9,"hy":2,"ay":2,"hr":0,"ar":0},
+{"d":"2024-10-19","h":"Southampton","a":"Leicester","hg":2,"ag":3,"hs":14,"as_":18,"hst":7,"ast":4,"hc":10,"ac":6,"hf":10,"af":10,"hy":5,"ay":3,"hr":1,"ar":0},
+{"d":"2024-10-19","h":"Tottenham","a":"West Ham","hg":4,"ag":1,"hs":22,"as_":11,"hst":7,"ast":4,"hc":13,"ac":5,"hf":10,"af":15,"hy":1,"ay":3,"hr":0,"ar":1},
+{"d":"2024-10-20","h":"Liverpool","a":"Chelsea","hg":2,"ag":1,"hs":9,"as_":12,"hst":5,"ast":2,"hc":1,"ac":6,"hf":12,"af":13,"hy":4,"ay":3,"hr":0,"ar":0},
+{"d":"2024-10-20","h":"Wolves","a":"Man City","hg":1,"ag":2,"hs":3,"as_":22,"hst":2,"ast":7,"hc":1,"ac":18,"hf":8,"af":5,"hy":4,"ay":1,"hr":0,"ar":0},
+{"d":"2024-10-21","h":"Nott'm Forest","a":"Crystal Palace","hg":1,"ag":0,"hs":20,"as_":20,"hst":6,"ast":7,"hc":6,"ac":6,"hf":9,"af":12,"hy":2,"ay":3,"hr":0,"ar":0},
+{"d":"2024-10-25","h":"Leicester","a":"Nott'm Forest","hg":1,"ag":3,"hs":11,"as_":20,"hst":1,"ast":5,"hc":6,"ac":7,"hf":16,"af":9,"hy":5,"ay":2,"hr":0,"ar":0},
+{"d":"2024-10-26","h":"Aston Villa","a":"Bournemouth","hg":1,"ag":1,"hs":18,"as_":11,"hst":8,"ast":3,"hc":9,"ac":7,"hf":12,"af":14,"hy":7,"ay":6,"hr":0,"ar":0},
+{"d":"2024-10-26","h":"Brentford","a":"Ipswich","hg":4,"ag":3,"hs":20,"as_":11,"hst":9,"ast":5,"hc":5,"ac":5,"hf":7,"af":10,"hy":0,"ay":1,"hr":0,"ar":1},
+{"d":"2024-10-26","h":"Brighton","a":"Wolves","hg":2,"ag":2,"hs":19,"as_":14,"hst":6,"ast":7,"hc":9,"ac":6,"hf":12,"af":10,"hy":3,"ay":3,"hr":0,"ar":0},
+{"d":"2024-10-26","h":"Everton","a":"Fulham","hg":1,"ag":1,"hs":10,"as_":14,"hst":5,"ast":3,"hc":4,"ac":2,"hf":8,"af":8,"hy":1,"ay":0,"hr":0,"ar":0},
+{"d":"2024-10-26","h":"Man City","a":"Southampton","hg":1,"ag":0,"hs":22,"as_":5,"hst":8,"ast":2,"hc":12,"ac":1,"hf":9,"af":9,"hy":1,"ay":3,"hr":0,"ar":0},
+{"d":"2024-10-27","h":"Arsenal","a":"Liverpool","hg":2,"ag":2,"hs":9,"as_":9,"hst":3,"ast":4,"hc":1,"ac":3,"hf":14,"af":14,"hy":2,"ay":2,"hr":0,"ar":0},
+{"d":"2024-10-27","h":"Chelsea","a":"Newcastle","hg":2,"ag":1,"hs":17,"as_":11,"hst":7,"ast":3,"hc":7,"ac":4,"hf":13,"af":16,"hy":6,"ay":3,"hr":0,"ar":0},
+{"d":"2024-10-27","h":"Crystal Palace","a":"Tottenham","hg":1,"ag":0,"hs":14,"as_":11,"hst":6,"ast":3,"hc":8,"ac":8,"hf":16,"af":12,"hy":4,"ay":4,"hr":0,"ar":0},
+{"d":"2024-10-27","h":"West Ham","a":"Man United","hg":2,"ag":1,"hs":12,"as_":18,"hst":3,"ast":5,"hc":6,"ac":5,"hf":6,"af":7,"hy":5,"ay":1,"hr":0,"ar":0},
+{"d":"2024-11-02","h":"Bournemouth","a":"Man City","hg":2,"ag":1,"hs":12,"as_":18,"hst":6,"ast":4,"hc":3,"ac":10,"hf":11,"af":6,"hy":2,"ay":1,"hr":0,"ar":0},
+{"d":"2024-11-02","h":"Ipswich","a":"Leicester","hg":1,"ag":1,"hs":14,"as_":20,"hst":2,"ast":6,"hc":4,"ac":6,"hf":11,"af":10,"hy":4,"ay":2,"hr":1,"ar":0},
+{"d":"2024-11-02","h":"Liverpool","a":"Brighton","hg":2,"ag":1,"hs":16,"as_":13,"hst":8,"ast":5,"hc":10,"ac":7,"hf":10,"af":18,"hy":1,"ay":1,"hr":0,"ar":0},
+{"d":"2024-11-02","h":"Newcastle","a":"Arsenal","hg":1,"ag":0,"hs":9,"as_":10,"hst":4,"ast":1,"hc":4,"ac":6,"hf":16,"af":18,"hy":4,"ay":4,"hr":0,"ar":0},
+{"d":"2024-11-02","h":"Nott'm Forest","a":"West Ham","hg":3,"ag":0,"hs":19,"as_":4,"hst":6,"ast":2,"hc":11,"ac":6,"hf":7,"af":9,"hy":1,"ay":2,"hr":0,"ar":1},
+{"d":"2024-11-02","h":"Southampton","a":"Everton","hg":1,"ag":0,"hs":9,"as_":16,"hst":2,"ast":5,"hc":3,"ac":6,"hf":14,"af":18,"hy":4,"ay":2,"hr":0,"ar":0},
+{"d":"2024-11-02","h":"Wolves","a":"Crystal Palace","hg":2,"ag":2,"hs":11,"as_":19,"hst":6,"ast":7,"hc":3,"ac":6,"hf":7,"af":9,"hy":1,"ay":2,"hr":0,"ar":0},
+{"d":"2024-11-03","h":"Man United","a":"Chelsea","hg":1,"ag":1,"hs":11,"as_":12,"hst":4,"ast":3,"hc":4,"ac":8,"hf":19,"af":14,"hy":6,"ay":2,"hr":0,"ar":0},
+{"d":"2024-11-03","h":"Tottenham","a":"Aston Villa","hg":4,"ag":1,"hs":16,"as_":12,"hst":6,"ast":1,"hc":6,"ac":4,"hf":14,"af":14,"hy":2,"ay":0,"hr":0,"ar":0},
+{"d":"2024-11-04","h":"Fulham","a":"Brentford","hg":2,"ag":1,"hs":26,"as_":5,"hst":12,"ast":2,"hc":11,"ac":3,"hf":3,"af":10,"hy":2,"ay":1,"hr":0,"ar":0},
+{"d":"2024-11-09","h":"Brentford","a":"Bournemouth","hg":3,"ag":2,"hs":12,"as_":15,"hst":6,"ast":3,"hc":6,"ac":4,"hf":8,"af":16,"hy":2,"ay":4,"hr":0,"ar":0},
+{"d":"2024-11-09","h":"Brighton","a":"Man City","hg":2,"ag":1,"hs":10,"as_":15,"hst":4,"ast":6,"hc":0,"ac":4,"hf":12,"af":10,"hy":3,"ay":3,"hr":0,"ar":0},
+{"d":"2024-11-09","h":"Crystal Palace","a":"Fulham","hg":0,"ag":2,"hs":13,"as_":17,"hst":5,"ast":7,"hc":1,"ac":8,"hf":10,"af":11,"hy":1,"ay":1,"hr":1,"ar":0},
+{"d":"2024-11-09","h":"Liverpool","a":"Aston Villa","hg":2,"ag":0,"hs":14,"as_":12,"hst":5,"ast":2,"hc":2,"ac":9,"hf":11,"af":15,"hy":0,"ay":3,"hr":0,"ar":0},
+{"d":"2024-11-09","h":"West Ham","a":"Everton","hg":0,"ag":0,"hs":11,"as_":18,"hst":6,"ast":4,"hc":7,"ac":6,"hf":10,"af":9,"hy":1,"ay":2,"hr":0,"ar":0},
+{"d":"2024-11-09","h":"Wolves","a":"Southampton","hg":2,"ag":0,"hs":8,"as_":9,"hst":4,"ast":0,"hc":1,"ac":9,"hf":14,"af":12,"hy":1,"ay":4,"hr":0,"ar":0},
+{"d":"2024-11-10","h":"Chelsea","a":"Arsenal","hg":1,"ag":1,"hs":17,"as_":13,"hst":3,"ast":3,"hc":4,"ac":3,"hf":12,"af":12,"hy":4,"ay":2,"hr":0,"ar":0},
+{"d":"2024-11-10","h":"Man United","a":"Leicester","hg":3,"ag":0,"hs":13,"as_":6,"hst":3,"ast":5,"hc":1,"ac":5,"hf":9,"af":5,"hy":0,"ay":1,"hr":0,"ar":0},
+{"d":"2024-11-10","h":"Nott'm Forest","a":"Newcastle","hg":1,"ag":3,"hs":9,"as_":17,"hst":3,"ast":6,"hc":4,"ac":5,"hf":13,"af":6,"hy":1,"ay":1,"hr":0,"ar":0},
+{"d":"2024-11-10","h":"Tottenham","a":"Ipswich","hg":1,"ag":2,"hs":17,"as_":8,"hst":5,"ast":3,"hc":12,"ac":2,"hf":10,"af":19,"hy":1,"ay":5,"hr":0,"ar":0},
+{"d":"2024-11-23","h":"Arsenal","a":"Nott'm Forest","hg":3,"ag":0,"hs":19,"as_":7,"hst":7,"ast":0,"hc":8,"ac":1,"hf":10,"af":1,"hy":3,"ay":2,"hr":0,"ar":0},
+{"d":"2024-11-23","h":"Aston Villa","a":"Crystal Palace","hg":2,"ag":2,"hs":17,"as_":13,"hst":5,"ast":6,"hc":10,"ac":1,"hf":10,"af":11,"hy":3,"ay":2,"hr":0,"ar":0},
+{"d":"2024-11-23","h":"Bournemouth","a":"Brighton","hg":1,"ag":2,"hs":19,"as_":6,"hst":5,"ast":4,"hc":7,"ac":0,"hf":13,"af":10,"hy":2,"ay":2,"hr":0,"ar":1},
+{"d":"2024-11-23","h":"Everton","a":"Brentford","hg":0,"ag":0,"hs":27,"as_":9,"hst":5,"ast":2,"hc":10,"ac":4,"hf":8,"af":10,"hy":0,"ay":0,"hr":0,"ar":1},
+{"d":"2024-11-23","h":"Fulham","a":"Wolves","hg":1,"ag":4,"hs":10,"as_":10,"hst":3,"ast":5,"hc":7,"ac":2,"hf":14,"af":14,"hy":3,"ay":0,"hr":0,"ar":0},
+{"d":"2024-11-23","h":"Leicester","a":"Chelsea","hg":1,"ag":2,"hs":4,"as_":16,"hst":1,"ast":7,"hc":2,"ac":9,"hf":15,"af":12,"hy":4,"ay":3,"hr":0,"ar":0},
+{"d":"2024-11-23","h":"Man City","a":"Tottenham","hg":0,"ag":4,"hs":23,"as_":9,"hst":5,"ast":7,"hc":9,"ac":3,"hf":19,"af":9,"hy":4,"ay":2,"hr":0,"ar":0},
+{"d":"2024-11-24","h":"Ipswich","a":"Man United","hg":1,"ag":1,"hs":11,"as_":11,"hst":6,"ast":4,"hc":4,"ac":3,"hf":11,"af":10,"hy":0,"ay":0,"hr":0,"ar":0},
+{"d":"2024-11-24","h":"Southampton","a":"Liverpool","hg":2,"ag":3,"hs":7,"as_":27,"hst":5,"ast":11,"hc":3,"ac":10,"hf":11,"af":9,"hy":3,"ay":4,"hr":0,"ar":0},
+{"d":"2024-11-25","h":"Newcastle","a":"West Ham","hg":0,"ag":2,"hs":18,"as_":15,"hst":2,"ast":6,"hc":8,"ac":3,"hf":11,"af":8,"hy":1,"ay":0,"hr":0,"ar":0},
+{"d":"2024-11-29","h":"Brighton","a":"Southampton","hg":1,"ag":1,"hs":22,"as_":10,"hst":5,"ast":2,"hc":7,"ac":6,"hf":20,"af":16,"hy":2,"ay":4,"hr":0,"ar":0},
+{"d":"2024-11-30","h":"Brentford","a":"Leicester","hg":4,"ag":1,"hs":13,"as_":7,"hst":6,"ast":3,"hc":5,"ac":4,"hf":9,"af":10,"hy":1,"ay":1,"hr":0,"ar":0},
+{"d":"2024-11-30","h":"Crystal Palace","a":"Newcastle","hg":1,"ag":1,"hs":16,"as_":1,"hst":4,"ast":0,"hc":8,"ac":9,"hf":12,"af":11,"hy":3,"ay":3,"hr":0,"ar":0},
+{"d":"2024-11-30","h":"Nott'm Forest","a":"Ipswich","hg":1,"ag":0,"hs":12,"as_":7,"hst":5,"ast":3,"hc":8,"ac":7,"hf":5,"af":16,"hy":1,"ay":3,"hr":0,"ar":0},
+{"d":"2024-11-30","h":"West Ham","a":"Arsenal","hg":2,"ag":5,"hs":12,"as_":16,"hst":5,"ast":7,"hc":2,"ac":10,"hf":10,"af":13,"hy":4,"ay":1,"hr":0,"ar":0},
+{"d":"2024-11-30","h":"Wolves","a":"Bournemouth","hg":2,"ag":4,"hs":10,"as_":12,"hst":3,"ast":8,"hc":3,"ac":4,"hf":13,"af":11,"hy":4,"ay":1,"hr":0,"ar":0},
+{"d":"2024-12-01","h":"Chelsea","a":"Aston Villa","hg":3,"ag":0,"hs":17,"as_":10,"hst":8,"ast":4,"hc":3,"ac":4,"hf":21,"af":6,"hy":2,"ay":2,"hr":0,"ar":0},
+{"d":"2024-12-01","h":"Liverpool","a":"Man City","hg":2,"ag":0,"hs":18,"as_":8,"hst":7,"ast":2,"hc":7,"ac":4,"hf":9,"af":8,"hy":1,"ay":3,"hr":0,"ar":0},
+{"d":"2024-12-01","h":"Man United","a":"Everton","hg":4,"ag":0,"hs":11,"as_":8,"hst":5,"ast":2,"hc":2,"ac":2,"hf":12,"af":12,"hy":2,"ay":3,"hr":0,"ar":0},
+{"d":"2024-12-01","h":"Tottenham","a":"Fulham","hg":1,"ag":1,"hs":8,"as_":14,"hst":3,"ast":6,"hc":7,"ac":11,"hf":4,"af":14,"hy":0,"ay":1,"hr":0,"ar":1},
+{"d":"2024-12-03","h":"Ipswich","a":"Crystal Palace","hg":0,"ag":1,"hs":9,"as_":13,"hst":2,"ast":3,"hc":4,"ac":7,"hf":14,"af":13,"hy":2,"ay":4,"hr":0,"ar":0},
+{"d":"2024-12-03","h":"Leicester","a":"West Ham","hg":3,"ag":1,"hs":8,"as_":31,"hst":6,"ast":10,"hc":3,"ac":9,"hf":9,"af":7,"hy":2,"ay":2,"hr":0,"ar":0},
+{"d":"2024-12-04","h":"Arsenal","a":"Man United","hg":2,"ag":0,"hs":14,"as_":5,"hst":6,"ast":2,"hc":13,"ac":0,"hf":12,"af":8,"hy":1,"ay":3,"hr":0,"ar":0},
+{"d":"2024-12-04","h":"Aston Villa","a":"Brentford","hg":3,"ag":1,"hs":20,"as_":9,"hst":10,"ast":1,"hc":10,"ac":5,"hf":11,"af":15,"hy":2,"ay":2,"hr":0,"ar":0},
+{"d":"2024-12-04","h":"Everton","a":"Wolves","hg":4,"ag":0,"hs":13,"as_":6,"hst":4,"ast":2,"hc":3,"ac":4,"hf":10,"af":8,"hy":2,"ay":0,"hr":0,"ar":0},
+{"d":"2024-12-04","h":"Man City","a":"Nott'm Forest","hg":3,"ag":0,"hs":17,"as_":12,"hst":7,"ast":3,"hc":8,"ac":2,"hf":7,"af":15,"hy":2,"ay":4,"hr":0,"ar":0},
+{"d":"2024-12-04","h":"Newcastle","a":"Liverpool","hg":3,"ag":3,"hs":17,"as_":16,"hst":6,"ast":5,"hc":5,"ac":6,"hf":9,"af":17,"hy":2,"ay":5,"hr":0,"ar":0},
+{"d":"2024-12-04","h":"Southampton","a":"Chelsea","hg":1,"ag":5,"hs":6,"as_":26,"hst":4,"ast":13,"hc":5,"ac":7,"hf":7,"af":14,"hy":1,"ay":0,"hr":1,"ar":0},
+{"d":"2024-12-05","h":"Bournemouth","a":"Tottenham","hg":1,"ag":0,"hs":21,"as_":12,"hst":8,"ast":4,"hc":5,"ac":9,"hf":15,"af":8,"hy":2,"ay":2,"hr":0,"ar":0},
+{"d":"2024-12-05","h":"Fulham","a":"Brighton","hg":3,"ag":1,"hs":6,"as_":13,"hst":2,"ast":3,"hc":5,"ac":6,"hf":7,"af":8,"hy":2,"ay":2,"hr":0,"ar":0},
+{"d":"2024-12-07","h":"Aston Villa","a":"Southampton","hg":1,"ag":0,"hs":18,"as_":4,"hst":5,"ast":0,"hc":14,"ac":1,"hf":18,"af":15,"hy":1,"ay":3,"hr":0,"ar":0},
+{"d":"2024-12-07","h":"Brentford","a":"Newcastle","hg":4,"ag":2,"hs":11,"as_":16,"hst":8,"ast":3,"hc":3,"ac":4,"hf":10,"af":7,"hy":3,"ay":0,"hr":0,"ar":0},
+{"d":"2024-12-07","h":"Crystal Palace","a":"Man City","hg":2,"ag":2,"hs":12,"as_":12,"hst":3,"ast":4,"hc":6,"ac":8,"hf":4,"af":10,"hy":1,"ay":0,"hr":0,"ar":1},
+{"d":"2024-12-07","h":"Man United","a":"Nott'm Forest","hg":2,"ag":3,"hs":17,"as_":11,"hst":7,"ast":3,"hc":5,"ac":3,"hf":10,"af":13,"hy":0,"ay":2,"hr":0,"ar":0},
+{"d":"2024-12-08","h":"Fulham","a":"Arsenal","hg":1,"ag":1,"hs":2,"as_":12,"hst":2,"ast":4,"hc":0,"ac":6,"hf":10,"af":9,"hy":4,"ay":2,"hr":0,"ar":0},
+{"d":"2024-12-08","h":"Ipswich","a":"Bournemouth","hg":1,"ag":2,"hs":18,"as_":22,"hst":5,"ast":6,"hc":6,"ac":13,"hf":9,"af":13,"hy":2,"ay":1,"hr":0,"ar":0},
+{"d":"2024-12-08","h":"Leicester","a":"Brighton","hg":2,"ag":2,"hs":10,"as_":16,"hst":3,"ast":7,"hc":5,"ac":5,"hf":9,"af":10,"hy":1,"ay":2,"hr":0,"ar":0},
+{"d":"2024-12-08","h":"Tottenham","a":"Chelsea","hg":3,"ag":4,"hs":13,"as_":17,"hst":5,"ast":8,"hc":5,"ac":10,"hf":17,"af":11,"hy":2,"ay":2,"hr":0,"ar":0},
+{"d":"2024-12-09","h":"West Ham","a":"Wolves","hg":2,"ag":1,"hs":19,"as_":19,"hst":4,"ast":5,"hc":11,"ac":0,"hf":12,"af":17,"hy":5,"ay":4,"hr":0,"ar":0},
+{"d":"2024-12-14","h":"Arsenal","a":"Everton","hg":0,"ag":0,"hs":13,"as_":2,"hst":5,"ast":0,"hc":8,"ac":2,"hf":6,"af":9,"hy":0,"ay":3,"hr":0,"ar":0},
+{"d":"2024-12-14","h":"Liverpool","a":"Fulham","hg":2,"ag":2,"hs":16,"as_":12,"hst":4,"ast":3,"hc":5,"ac":4,"hf":10,"af":7,"hy":3,"ay":4,"hr":1,"ar":0},
+{"d":"2024-12-14","h":"Newcastle","a":"Leicester","hg":4,"ag":0,"hs":27,"as_":4,"hst":11,"ast":1,"hc":5,"ac":2,"hf":7,"af":16,"hy":3,"ay":3,"hr":0,"ar":0},
+{"d":"2024-12-14","h":"Nott'm Forest","a":"Aston Villa","hg":2,"ag":1,"hs":17,"as_":8,"hst":6,"ast":2,"hc":4,"ac":3,"hf":12,"af":6,"hy":0,"ay":1,"hr":0,"ar":0},
+{"d":"2024-12-14","h":"Wolves","a":"Ipswich","hg":1,"ag":2,"hs":16,"as_":10,"hst":6,"ast":5,"hc":7,"ac":3,"hf":13,"af":9,"hy":0,"ay":2,"hr":1,"ar":0},
+{"d":"2024-12-15","h":"Brighton","a":"Crystal Palace","hg":1,"ag":3,"hs":17,"as_":13,"hst":5,"ast":5,"hc":8,"ac":5,"hf":11,"af":15,"hy":1,"ay":4,"hr":0,"ar":0},
+{"d":"2024-12-15","h":"Chelsea","a":"Brentford","hg":2,"ag":1,"hs":26,"as_":9,"hst":8,"ast":4,"hc":8,"ac":5,"hf":11,"af":7,"hy":0,"ay":2,"hr":1,"ar":0},
+{"d":"2024-12-15","h":"Man City","a":"Man United","hg":1,"ag":2,"hs":10,"as_":10,"hst":3,"ast":3,"hc":8,"ac":2,"hf":5,"af":14,"hy":1,"ay":1,"hr":0,"ar":0},
+{"d":"2024-12-15","h":"Southampton","a":"Tottenham","hg":0,"ag":5,"hs":9,"as_":18,"hst":3,"ast":9,"hc":2,"ac":5,"hf":8,"af":15,"hy":1,"ay":3,"hr":0,"ar":0},
+{"d":"2024-12-16","h":"Bournemouth","a":"West Ham","hg":1,"ag":1,"hs":29,"as_":16,"hst":9,"ast":3,"hc":12,"ac":6,"hf":6,"af":11,"hy":0,"ay":2,"hr":0,"ar":0},
+{"d":"2024-12-21","h":"Aston Villa","a":"Man City","hg":2,"ag":1,"hs":11,"as_":12,"hst":6,"ast":6,"hc":5,"ac":4,"hf":14,"af":7,"hy":3,"ay":3,"hr":0,"ar":0},
+{"d":"2024-12-21","h":"Brentford","a":"Nott'm Forest","hg":0,"ag":2,"hs":7,"as_":10,"hst":3,"ast":6,"hc":9,"ac":5,"hf":9,"af":14,"hy":3,"ay":4,"hr":0,"ar":0},
+{"d":"2024-12-21","h":"Crystal Palace","a":"Arsenal","hg":1,"ag":5,"hs":15,"as_":14,"hst":6,"ast":6,"hc":3,"ac":3,"hf":9,"af":8,"hy":2,"ay":2,"hr":0,"ar":0},
+{"d":"2024-12-21","h":"Ipswich","a":"Newcastle","hg":0,"ag":4,"hs":10,"as_":15,"hst":2,"ast":7,"hc":2,"ac":1,"hf":9,"af":7,"hy":2,"ay":0,"hr":0,"ar":0},
+{"d":"2024-12-21","h":"West Ham","a":"Brighton","hg":1,"ag":1,"hs":11,"as_":12,"hst":4,"ast":6,"hc":8,"ac":4,"hf":14,"af":20,"hy":2,"ay":2,"hr":0,"ar":0},
+{"d":"2024-12-22","h":"Everton","a":"Chelsea","hg":0,"ag":0,"hs":5,"as_":12,"hst":4,"ast":5,"hc":2,"ac":5,"hf":20,"af":12,"hy":4,"ay":1,"hr":0,"ar":0},
+{"d":"2024-12-22","h":"Fulham","a":"Southampton","hg":0,"ag":0,"hs":16,"as_":5,"hst":5,"ast":1,"hc":6,"ac":5,"hf":8,"af":15,"hy":1,"ay":3,"hr":0,"ar":0},
+{"d":"2024-12-22","h":"Leicester","a":"Wolves","hg":0,"ag":3,"hs":9,"as_":8,"hst":5,"ast":4,"hc":6,"ac":1,"hf":15,"af":16,"hy":2,"ay":0,"hr":0,"ar":0},
+{"d":"2024-12-22","h":"Man United","a":"Bournemouth","hg":0,"ag":3,"hs":23,"as_":10,"hst":7,"ast":5,"hc":13,"ac":1,"hf":11,"af":11,"hy":1,"ay":3,"hr":0,"ar":0},
+{"d":"2024-12-22","h":"Tottenham","a":"Liverpool","hg":3,"ag":6,"hs":9,"as_":24,"hst":5,"ast":12,"hc":7,"ac":5,"hf":7,"af":9,"hy":1,"ay":2,"hr":0,"ar":0},
+{"d":"2024-12-26","h":"Bournemouth","a":"Crystal Palace","hg":0,"ag":0,"hs":18,"as_":10,"hst":4,"ast":4,"hc":5,"ac":2,"hf":13,"af":12,"hy":2,"ay":2,"hr":0,"ar":0},
+{"d":"2024-12-26","h":"Chelsea","a":"Fulham","hg":1,"ag":2,"hs":12,"as_":14,"hst":8,"ast":7,"hc":3,"ac":1,"hf":13,"af":13,"hy":1,"ay":3,"hr":0,"ar":0},
+{"d":"2024-12-26","h":"Liverpool","a":"Leicester","hg":3,"ag":1,"hs":19,"as_":4,"hst":7,"ast":1,"hc":14,"ac":1,"hf":17,"af":5,"hy":3,"ay":2,"hr":0,"ar":0},
+{"d":"2024-12-26","h":"Man City","a":"Everton","hg":1,"ag":1,"hs":24,"as_":8,"hst":5,"ast":3,"hc":8,"ac":5,"hf":5,"af":10,"hy":1,"ay":4,"hr":0,"ar":0},
+{"d":"2024-12-26","h":"Newcastle","a":"Aston Villa","hg":3,"ag":0,"hs":22,"as_":4,"hst":8,"ast":1,"hc":9,"ac":6,"hf":15,"af":10,"hy":2,"ay":1,"hr":0,"ar":1},
+{"d":"2024-12-26","h":"Nott'm Forest","a":"Tottenham","hg":1,"ag":0,"hs":10,"as_":13,"hst":3,"ast":4,"hc":2,"ac":7,"hf":12,"af":13,"hy":3,"ay":2,"hr":0,"ar":1},
+{"d":"2024-12-26","h":"Southampton","a":"West Ham","hg":0,"ag":1,"hs":18,"as_":16,"hst":5,"ast":2,"hc":2,"ac":2,"hf":15,"af":8,"hy":1,"ay":2,"hr":0,"ar":0},
+{"d":"2024-12-26","h":"Wolves","a":"Man United","hg":2,"ag":0,"hs":7,"as_":11,"hst":4,"ast":4,"hc":4,"ac":4,"hf":12,"af":12,"hy":2,"ay":2,"hr":0,"ar":1},
+{"d":"2024-12-27","h":"Arsenal","a":"Ipswich","hg":1,"ag":0,"hs":13,"as_":3,"hst":5,"ast":0,"hc":5,"ac":1,"hf":7,"af":12,"hy":1,"ay":1,"hr":0,"ar":0},
+{"d":"2024-12-27","h":"Brighton","a":"Brentford","hg":0,"ag":0,"hs":24,"as_":8,"hst":7,"ast":3,"hc":5,"ac":3,"hf":6,"af":12,"hy":0,"ay":2,"hr":0,"ar":0},
+{"d":"2024-12-29","h":"Crystal Palace","a":"Southampton","hg":2,"ag":1,"hs":19,"as_":7,"hst":10,"ast":3,"hc":8,"ac":7,"hf":18,"af":19,"hy":2,"ay":3,"hr":0,"ar":0},
+{"d":"2024-12-29","h":"Everton","a":"Nott'm Forest","hg":0,"ag":2,"hs":13,"as_":11,"hst":2,"ast":7,"hc":5,"ac":4,"hf":13,"af":10,"hy":4,"ay":1,"hr":0,"ar":0},
+{"d":"2024-12-29","h":"Fulham","a":"Bournemouth","hg":2,"ag":2,"hs":11,"as_":16,"hst":6,"ast":9,"hc":1,"ac":7,"hf":7,"af":16,"hy":1,"ay":3,"hr":0,"ar":0},
+{"d":"2024-12-29","h":"Leicester","a":"Man City","hg":0,"ag":2,"hs":11,"as_":14,"hst":4,"ast":5,"hc":4,"ac":4,"hf":11,"af":6,"hy":2,"ay":1,"hr":0,"ar":0},
+{"d":"2024-12-29","h":"Tottenham","a":"Wolves","hg":2,"ag":2,"hs":13,"as_":11,"hst":3,"ast":3,"hc":5,"ac":5,"hf":9,"af":10,"hy":1,"ay":2,"hr":0,"ar":0},
+{"d":"2024-12-29","h":"West Ham","a":"Liverpool","hg":0,"ag":5,"hs":7,"as_":22,"hst":0,"ast":13,"hc":3,"ac":6,"hf":7,"af":10,"hy":0,"ay":0,"hr":0,"ar":0},
+{"d":"2024-12-30","h":"Aston Villa","a":"Brighton","hg":2,"ag":2,"hs":20,"as_":13,"hst":4,"ast":4,"hc":12,"ac":3,"hf":9,"af":14,"hy":2,"ay":3,"hr":0,"ar":0},
+{"d":"2024-12-30","h":"Ipswich","a":"Chelsea","hg":2,"ag":0,"hs":9,"as_":20,"hst":6,"ast":5,"hc":4,"ac":7,"hf":9,"af":5,"hy":4,"ay":4,"hr":0,"ar":0},
+{"d":"2024-12-30","h":"Man United","a":"Newcastle","hg":0,"ag":2,"hs":10,"as_":12,"hst":0,"ast":4,"hc":2,"ac":3,"hf":13,"af":8,"hy":1,"ay":1,"hr":0,"ar":0},
+{"d":"2025-01-01","h":"Brentford","a":"Arsenal","hg":1,"ag":3,"hs":5,"as_":14,"hst":2,"ast":5,"hc":4,"ac":3,"hf":6,"af":8,"hy":1,"ay":2,"hr":0,"ar":0},
+{"d":"2025-01-04","h":"Aston Villa","a":"Leicester","hg":2,"ag":1,"hs":13,"as_":4,"hst":5,"ast":2,"hc":7,"ac":2,"hf":10,"af":11,"hy":0,"ay":1,"hr":0,"ar":0},
+{"d":"2025-01-04","h":"Bournemouth","a":"Everton","hg":1,"ag":0,"hs":19,"as_":9,"hst":8,"ast":0,"hc":9,"ac":3,"hf":15,"af":14,"hy":2,"ay":2,"hr":0,"ar":0},
+{"d":"2025-01-04","h":"Brighton","a":"Arsenal","hg":1,"ag":1,"hs":11,"as_":9,"hst":4,"ast":3,"hc":2,"ac":5,"hf":17,"af":14,"hy":2,"ay":3,"hr":0,"ar":0},
+{"d":"2025-01-04","h":"Crystal Palace","a":"Chelsea","hg":1,"ag":1,"hs":13,"as_":15,"hst":6,"ast":1,"hc":6,"ac":6,"hf":9,"af":12,"hy":0,"ay":2,"hr":0,"ar":0},
+{"d":"2025-01-04","h":"Man City","a":"West Ham","hg":4,"ag":1,"hs":10,"as_":17,"hst":7,"ast":4,"hc":7,"ac":1,"hf":8,"af":13,"hy":2,"ay":1,"hr":0,"ar":0},
+{"d":"2025-01-04","h":"Southampton","a":"Brentford","hg":0,"ag":5,"hs":8,"as_":20,"hst":1,"ast":11,"hc":2,"ac":2,"hf":10,"af":4,"hy":2,"ay":0,"hr":0,"ar":0},
+{"d":"2025-01-04","h":"Tottenham","a":"Newcastle","hg":1,"ag":2,"hs":13,"as_":14,"hst":4,"ast":4,"hc":9,"ac":10,"hf":11,"af":15,"hy":1,"ay":4,"hr":0,"ar":0},
+{"d":"2025-01-05","h":"Fulham","a":"Ipswich","hg":2,"ag":2,"hs":15,"as_":7,"hst":4,"ast":3,"hc":9,"ac":2,"hf":10,"af":14,"hy":1,"ay":5,"hr":0,"ar":0},
+{"d":"2025-01-05","h":"Liverpool","a":"Man United","hg":2,"ag":2,"hs":19,"as_":13,"hst":6,"ast":4,"hc":6,"ac":9,"hf":10,"af":13,"hy":2,"ay":4,"hr":0,"ar":0},
+{"d":"2025-01-06","h":"Wolves","a":"Nott'm Forest","hg":0,"ag":3,"hs":13,"as_":11,"hst":6,"ast":3,"hc":5,"ac":3,"hf":10,"af":8,"hy":1,"ay":2,"hr":0,"ar":0},
+{"d":"2025-01-14","h":"Brentford","a":"Man City","hg":2,"ag":2,"hs":18,"as_":21,"hst":6,"ast":8,"hc":4,"ac":5,"hf":4,"af":4,"hy":0,"ay":0,"hr":0,"ar":0},
+{"d":"2025-01-14","h":"Chelsea","a":"Bournemouth","hg":2,"ag":2,"hs":26,"as_":7,"hst":10,"ast":3,"hc":9,"ac":3,"hf":15,"af":16,"hy":2,"ay":3,"hr":0,"ar":0},
+{"d":"2025-01-14","h":"Nott'm Forest","a":"Liverpool","hg":1,"ag":1,"hs":6,"as_":23,"hst":3,"ast":7,"hc":0,"ac":9,"hf":7,"af":10,"hy":2,"ay":1,"hr":0,"ar":0},
+{"d":"2025-01-14","h":"West Ham","a":"Fulham","hg":3,"ag":2,"hs":4,"as_":21,"hst":3,"ast":5,"hc":0,"ac":3,"hf":9,"af":18,"hy":3,"ay":3,"hr":0,"ar":0},
+{"d":"2025-01-15","h":"Arsenal","a":"Tottenham","hg":2,"ag":1,"hs":14,"as_":10,"hst":4,"ast":2,"hc":10,"ac":4,"hf":16,"af":9,"hy":3,"ay":1,"hr":0,"ar":0},
+{"d":"2025-01-15","h":"Everton","a":"Aston Villa","hg":0,"ag":1,"hs":10,"as_":11,"hst":3,"ast":3,"hc":8,"ac":5,"hf":17,"af":10,"hy":2,"ay":1,"hr":0,"ar":0},
+{"d":"2025-01-15","h":"Leicester","a":"Crystal Palace","hg":0,"ag":2,"hs":21,"as_":9,"hst":4,"ast":4,"hc":4,"ac":3,"hf":7,"af":6,"hy":0,"ay":0,"hr":0,"ar":0},
+{"d":"2025-01-15","h":"Newcastle","a":"Wolves","hg":3,"ag":0,"hs":17,"as_":13,"hst":5,"ast":7,"hc":4,"ac":2,"hf":10,"af":13,"hy":0,"ay":2,"hr":0,"ar":0},
+{"d":"2025-01-16","h":"Ipswich","a":"Brighton","hg":0,"ag":2,"hs":5,"as_":11,"hst":3,"ast":5,"hc":1,"ac":9,"hf":13,"af":14,"hy":2,"ay":2,"hr":0,"ar":0},
+{"d":"2025-01-16","h":"Man United","a":"Southampton","hg":3,"ag":1,"hs":23,"as_":13,"hst":9,"ast":5,"hc":5,"ac":4,"hf":7,"af":10,"hy":1,"ay":3,"hr":0,"ar":0},
+{"d":"2025-01-18","h":"Arsenal","a":"Aston Villa","hg":2,"ag":2,"hs":18,"as_":8,"hst":6,"ast":4,"hc":10,"ac":1,"hf":10,"af":18,"hy":2,"ay":3,"hr":0,"ar":0},
+{"d":"2025-01-18","h":"Brentford","a":"Liverpool","hg":0,"ag":2,"hs":11,"as_":37,"hst":6,"ast":8,"hc":2,"ac":15,"hf":6,"af":14,"hy":2,"ay":3,"hr":0,"ar":0},
+{"d":"2025-01-18","h":"Leicester","a":"Fulham","hg":0,"ag":2,"hs":8,"as_":17,"hst":4,"ast":2,"hc":5,"ac":2,"hf":8,"af":8,"hy":3,"ay":1,"hr":0,"ar":0},
+{"d":"2025-01-18","h":"Newcastle","a":"Bournemouth","hg":1,"ag":4,"hs":13,"as_":19,"hst":5,"ast":10,"hc":7,"ac":6,"hf":7,"af":18,"hy":1,"ay":6,"hr":0,"ar":0},
+{"d":"2025-01-18","h":"West Ham","a":"Crystal Palace","hg":0,"ag":2,"hs":7,"as_":12,"hst":0,"ast":7,"hc":2,"ac":4,"hf":13,"af":10,"hy":1,"ay":0,"hr":1,"ar":0},
+{"d":"2025-01-19","h":"Everton","a":"Tottenham","hg":3,"ag":2,"hs":12,"as_":11,"hst":6,"ast":6,"hc":3,"ac":8,"hf":14,"af":14,"hy":2,"ay":1,"hr":0,"ar":0},
+{"d":"2025-01-19","h":"Ipswich","a":"Man City","hg":0,"ag":6,"hs":8,"as_":17,"hst":4,"ast":9,"hc":4,"ac":7,"hf":4,"af":7,"hy":0,"ay":1,"hr":0,"ar":0},
+{"d":"2025-01-19","h":"Man United","a":"Brighton","hg":1,"ag":3,"hs":10,"as_":6,"hst":1,"ast":3,"hc":4,"ac":2,"hf":13,"af":12,"hy":3,"ay":3,"hr":0,"ar":0},
+{"d":"2025-01-19","h":"Nott'm Forest","a":"Southampton","hg":3,"ag":2,"hs":14,"as_":10,"hst":5,"ast":4,"hc":2,"ac":8,"hf":4,"af":18,"hy":0,"ay":4,"hr":0,"ar":0},
+{"d":"2025-01-20","h":"Chelsea","a":"Wolves","hg":3,"ag":1,"hs":19,"as_":9,"hst":7,"ast":4,"hc":3,"ac":6,"hf":8,"af":14,"hy":4,"ay":2,"hr":0,"ar":0},
+{"d":"2025-01-25","h":"Bournemouth","a":"Nott'm Forest","hg":5,"ag":0,"hs":16,"as_":18,"hst":10,"ast":4,"hc":3,"ac":9,"hf":9,"af":12,"hy":2,"ay":3,"hr":0,"ar":0},
+{"d":"2025-01-25","h":"Brighton","a":"Everton","hg":0,"ag":1,"hs":16,"as_":3,"hst":1,"ast":1,"hc":9,"ac":1,"hf":8,"af":11,"hy":3,"ay":4,"hr":0,"ar":0},
+{"d":"2025-01-25","h":"Liverpool","a":"Ipswich","hg":4,"ag":1,"hs":16,"as_":3,"hst":6,"ast":3,"hc":3,"ac":4,"hf":10,"af":11,"hy":0,"ay":2,"hr":0,"ar":0},
+{"d":"2025-01-25","h":"Man City","a":"Chelsea","hg":3,"ag":1,"hs":15,"as_":10,"hst":6,"ast":4,"hc":2,"ac":4,"hf":6,"af":8,"hy":3,"ay":2,"hr":0,"ar":0},
+{"d":"2025-01-25","h":"Southampton","a":"Newcastle","hg":1,"ag":3,"hs":12,"as_":17,"hst":5,"ast":9,"hc":3,"ac":8,"hf":10,"af":5,"hy":1,"ay":0,"hr":0,"ar":0},
+{"d":"2025-01-25","h":"Wolves","a":"Arsenal","hg":0,"ag":1,"hs":9,"as_":9,"hst":4,"ast":3,"hc":1,"ac":5,"hf":20,"af":10,"hy":0,"ay":1,"hr":1,"ar":1},
+{"d":"2025-01-26","h":"Aston Villa","a":"West Ham","hg":1,"ag":1,"hs":14,"as_":14,"hst":4,"ast":4,"hc":4,"ac":3,"hf":13,"af":16,"hy":2,"ay":3,"hr":0,"ar":0},
+{"d":"2025-01-26","h":"Crystal Palace","a":"Brentford","hg":1,"ag":2,"hs":16,"as_":13,"hst":5,"ast":6,"hc":4,"ac":7,"hf":8,"af":11,"hy":2,"ay":2,"hr":0,"ar":0},
+{"d":"2025-01-26","h":"Fulham","a":"Man United","hg":0,"ag":1,"hs":9,"as_":4,"hst":3,"ast":1,"hc":3,"ac":0,"hf":7,"af":9,"hy":0,"ay":1,"hr":0,"ar":0},
+{"d":"2025-01-26","h":"Tottenham","a":"Leicester","hg":1,"ag":2,"hs":15,"as_":12,"hst":6,"ast":3,"hc":6,"ac":4,"hf":6,"af":16,"hy":1,"ay":5,"hr":0,"ar":0},
+{"d":"2025-02-01","h":"Bournemouth","a":"Liverpool","hg":0,"ag":2,"hs":14,"as_":19,"hst":3,"ast":7,"hc":3,"ac":3,"hf":15,"af":9,"hy":2,"ay":3,"hr":0,"ar":0},
+{"d":"2025-02-01","h":"Everton","a":"Leicester","hg":4,"ag":0,"hs":13,"as_":9,"hst":7,"ast":1,"hc":5,"ac":6,"hf":7,"af":13,"hy":0,"ay":0,"hr":0,"ar":0},
+{"d":"2025-02-01","h":"Ipswich","a":"Southampton","hg":1,"ag":2,"hs":15,"as_":9,"hst":6,"ast":4,"hc":1,"ac":2,"hf":11,"af":14,"hy":0,"ay":3,"hr":0,"ar":0},
+{"d":"2025-02-01","h":"Newcastle","a":"Fulham","hg":1,"ag":2,"hs":11,"as_":15,"hst":4,"ast":4,"hc":4,"ac":7,"hf":10,"af":15,"hy":4,"ay":4,"hr":0,"ar":0},
+{"d":"2025-02-01","h":"Nott'm Forest","a":"Brighton","hg":7,"ag":0,"hs":14,"as_":10,"hst":9,"ast":5,"hc":4,"ac":6,"hf":8,"af":13,"hy":1,"ay":3,"hr":0,"ar":0},
+{"d":"2025-02-01","h":"Wolves","a":"Aston Villa","hg":2,"ag":0,"hs":8,"as_":10,"hst":5,"ast":3,"hc":5,"ac":8,"hf":20,"af":13,"hy":2,"ay":3,"hr":0,"ar":0},
+{"d":"2025-02-02","h":"Arsenal","a":"Man City","hg":5,"ag":1,"hs":12,"as_":7,"hst":7,"ast":4,"hc":5,"ac":2,"hf":6,"af":7,"hy":2,"ay":0,"hr":0,"ar":0},
+{"d":"2025-02-02","h":"Brentford","a":"Tottenham","hg":0,"ag":2,"hs":20,"as_":13,"hst":4,"ast":2,"hc":10,"ac":3,"hf":4,"af":11,"hy":0,"ay":1,"hr":0,"ar":0},
+{"d":"2025-02-02","h":"Man United","a":"Crystal Palace","hg":0,"ag":2,"hs":17,"as_":11,"hst":2,"ast":3,"hc":11,"ac":0,"hf":12,"af":13,"hy":3,"ay":1,"hr":0,"ar":0},
+{"d":"2025-02-03","h":"Chelsea","a":"West Ham","hg":2,"ag":1,"hs":22,"as_":14,"hst":3,"ast":5,"hc":4,"ac":3,"hf":11,"af":10,"hy":3,"ay":1,"hr":0,"ar":0},
+{"d":"2025-02-12","h":"Everton","a":"Liverpool","hg":2,"ag":2,"hs":10,"as_":6,"hst":3,"ast":4,"hc":2,"ac":3,"hf":9,"af":20,"hy":2,"ay":2,"hr":1,"ar":1},
+{"d":"2025-02-14","h":"Brighton","a":"Chelsea","hg":3,"ag":0,"hs":13,"as_":8,"hst":5,"ast":0,"hc":2,"ac":9,"hf":12,"af":15,"hy":1,"ay":2,"hr":0,"ar":0},
+{"d":"2025-02-15","h":"Aston Villa","a":"Ipswich","hg":1,"ag":1,"hs":25,"as_":4,"hst":6,"ast":3,"hc":16,"ac":1,"hf":7,"af":11,"hy":0,"ay":3,"hr":0,"ar":1},
+{"d":"2025-02-15","h":"Crystal Palace","a":"Everton","hg":1,"ag":2,"hs":17,"as_":11,"hst":6,"ast":6,"hc":6,"ac":2,"hf":9,"af":12,"hy":0,"ay":1,"hr":0,"ar":0},
+{"d":"2025-02-15","h":"Fulham","a":"Nott'm Forest","hg":2,"ag":1,"hs":24,"as_":8,"hst":10,"ast":2,"hc":8,"ac":4,"hf":13,"af":8,"hy":0,"ay":0,"hr":0,"ar":0},
+{"d":"2025-02-15","h":"Leicester","a":"Arsenal","hg":0,"ag":2,"hs":6,"as_":11,"hst":2,"ast":5,"hc":3,"ac":7,"hf":9,"af":10,"hy":2,"ay":1,"hr":0,"ar":0},
+{"d":"2025-02-15","h":"Man City","a":"Newcastle","hg":4,"ag":0,"hs":11,"as_":3,"hst":7,"ast":1,"hc":7,"ac":4,"hf":5,"af":13,"hy":0,"ay":1,"hr":0,"ar":0},
+{"d":"2025-02-15","h":"Southampton","a":"Bournemouth","hg":1,"ag":3,"hs":11,"as_":14,"hst":4,"ast":7,"hc":4,"ac":6,"hf":13,"af":15,"hy":1,"ay":3,"hr":0,"ar":0},
+{"d":"2025-02-15","h":"West Ham","a":"Brentford","hg":0,"ag":1,"hs":13,"as_":14,"hst":3,"ast":5,"hc":9,"ac":2,"hf":10,"af":13,"hy":1,"ay":1,"hr":0,"ar":0},
+{"d":"2025-02-16","h":"Liverpool","a":"Wolves","hg":2,"ag":1,"hs":10,"as_":16,"hst":3,"ast":4,"hc":4,"ac":3,"hf":15,"af":13,"hy":2,"ay":2,"hr":0,"ar":0},
+{"d":"2025-02-16","h":"Tottenham","a":"Man United","hg":1,"ag":0,"hs":22,"as_":16,"hst":7,"ast":6,"hc":10,"ac":5,"hf":13,"af":9,"hy":1,"ay":2,"hr":0,"ar":0},
+{"d":"2025-02-19","h":"Aston Villa","a":"Liverpool","hg":2,"ag":2,"hs":9,"as_":17,"hst":4,"ast":3,"hc":6,"ac":8,"hf":8,"af":6,"hy":1,"ay":0,"hr":0,"ar":0},
+{"d":"2025-02-21","h":"Leicester","a":"Brentford","hg":0,"ag":4,"hs":8,"as_":14,"hst":3,"ast":6,"hc":5,"ac":6,"hf":10,"af":10,"hy":4,"ay":0,"hr":0,"ar":0},
+{"d":"2025-02-22","h":"Arsenal","a":"West Ham","hg":0,"ag":1,"hs":20,"as_":5,"hst":2,"ast":2,"hc":2,"ac":0,"hf":16,"af":15,"hy":1,"ay":3,"hr":1,"ar":0},
+{"d":"2025-02-22","h":"Aston Villa","a":"Chelsea","hg":2,"ag":1,"hs":12,"as_":15,"hst":6,"ast":7,"hc":2,"ac":3,"hf":15,"af":16,"hy":1,"ay":3,"hr":0,"ar":0},
+{"d":"2025-02-22","h":"Bournemouth","a":"Wolves","hg":0,"ag":1,"hs":8,"as_":13,"hst":3,"ast":5,"hc":6,"ac":7,"hf":17,"af":9,"hy":3,"ay":3,"hr":1,"ar":0},
+{"d":"2025-02-22","h":"Everton","a":"Man United","hg":2,"ag":2,"hs":9,"as_":9,"hst":8,"ast":3,"hc":7,"ac":9,"hf":12,"af":9,"hy":4,"ay":1,"hr":0,"ar":0},
+{"d":"2025-02-22","h":"Fulham","a":"Crystal Palace","hg":0,"ag":2,"hs":10,"as_":10,"hst":0,"ast":5,"hc":7,"ac":7,"hf":10,"af":7,"hy":1,"ay":3,"hr":0,"ar":0},
+{"d":"2025-02-22","h":"Ipswich","a":"Tottenham","hg":1,"ag":4,"hs":17,"as_":10,"hst":5,"ast":6,"hc":4,"ac":4,"hf":15,"af":14,"hy":2,"ay":1,"hr":0,"ar":0},
+{"d":"2025-02-22","h":"Southampton","a":"Brighton","hg":0,"ag":4,"hs":6,"as_":18,"hst":1,"ast":12,"hc":5,"ac":6,"hf":11,"af":12,"hy":2,"ay":0,"hr":0,"ar":0},
+{"d":"2025-02-23","h":"Man City","a":"Liverpool","hg":0,"ag":2,"hs":16,"as_":8,"hst":5,"ast":4,"hc":7,"ac":5,"hf":3,"af":10,"hy":0,"ay":0,"hr":0,"ar":0},
+{"d":"2025-02-23","h":"Newcastle","a":"Nott'm Forest","hg":4,"ag":3,"hs":13,"as_":17,"hst":5,"ast":5,"hc":7,"ac":6,"hf":11,"af":13,"hy":1,"ay":4,"hr":0,"ar":0},
+{"d":"2025-02-25","h":"Brighton","a":"Bournemouth","hg":2,"ag":1,"hs":11,"as_":19,"hst":4,"ast":5,"hc":1,"ac":9,"hf":12,"af":14,"hy":2,"ay":1,"hr":0,"ar":0},
+{"d":"2025-02-25","h":"Chelsea","a":"Southampton","hg":4,"ag":0,"hs":19,"as_":7,"hst":10,"ast":2,"hc":4,"ac":2,"hf":6,"af":9,"hy":1,"ay":2,"hr":0,"ar":0},
+{"d":"2025-02-25","h":"Crystal Palace","a":"Aston Villa","hg":4,"ag":1,"hs":19,"as_":6,"hst":6,"ast":2,"hc":3,"ac":8,"hf":19,"af":10,"hy":3,"ay":1,"hr":0,"ar":0},
+{"d":"2025-02-25","h":"Wolves","a":"Fulham","hg":1,"ag":2,"hs":18,"as_":11,"hst":5,"ast":5,"hc":7,"ac":5,"hf":8,"af":15,"hy":1,"ay":3,"hr":0,"ar":0},
+{"d":"2025-02-26","h":"Brentford","a":"Everton","hg":1,"ag":1,"hs":12,"as_":14,"hst":3,"ast":4,"hc":2,"ac":5,"hf":3,"af":6,"hy":2,"ay":1,"hr":0,"ar":0},
+{"d":"2025-02-26","h":"Liverpool","a":"Newcastle","hg":2,"ag":0,"hs":12,"as_":3,"hst":3,"ast":0,"hc":4,"ac":2,"hf":12,"af":11,"hy":0,"ay":1,"hr":0,"ar":0},
+{"d":"2025-02-26","h":"Man United","a":"Ipswich","hg":3,"ag":2,"hs":10,"as_":12,"hst":6,"ast":3,"hc":5,"ac":6,"hf":9,"af":16,"hy":4,"ay":4,"hr":1,"ar":0},
+{"d":"2025-02-26","h":"Nott'm Forest","a":"Arsenal","hg":0,"ag":0,"hs":6,"as_":13,"hst":2,"ast":1,"hc":3,"ac":11,"hf":10,"af":17,"hy":1,"ay":1,"hr":0,"ar":0},
+{"d":"2025-02-26","h":"Tottenham","a":"Man City","hg":0,"ag":1,"hs":11,"as_":12,"hst":6,"ast":5,"hc":8,"ac":3,"hf":12,"af":15,"hy":3,"ay":0,"hr":0,"ar":0},
+{"d":"2025-02-27","h":"West Ham","a":"Leicester","hg":2,"ag":0,"hs":8,"as_":10,"hst":2,"ast":2,"hc":3,"ac":3,"hf":12,"af":6,"hy":0,"ay":0,"hr":0,"ar":0},
+{"d":"2025-03-08","h":"Brentford","a":"Aston Villa","hg":0,"ag":1,"hs":13,"as_":12,"hst":3,"ast":4,"hc":6,"ac":5,"hf":10,"af":5,"hy":2,"ay":2,"hr":0,"ar":0},
+{"d":"2025-03-08","h":"Brighton","a":"Fulham","hg":2,"ag":1,"hs":9,"as_":6,"hst":4,"ast":1,"hc":3,"ac":7,"hf":6,"af":12,"hy":0,"ay":2,"hr":0,"ar":0},
+{"d":"2025-03-08","h":"Crystal Palace","a":"Ipswich","hg":1,"ag":0,"hs":19,"as_":15,"hst":4,"ast":8,"hc":5,"ac":4,"hf":8,"af":7,"hy":4,"ay":3,"hr":0,"ar":0},
+{"d":"2025-03-08","h":"Liverpool","a":"Southampton","hg":3,"ag":1,"hs":28,"as_":6,"hst":7,"ast":4,"hc":6,"ac":4,"hf":10,"af":9,"hy":2,"ay":1,"hr":0,"ar":0},
+{"d":"2025-03-08","h":"Nott'm Forest","a":"Man City","hg":1,"ag":0,"hs":9,"as_":14,"hst":4,"ast":3,"hc":3,"ac":2,"hf":9,"af":7,"hy":3,"ay":2,"hr":0,"ar":0},
+{"d":"2025-03-08","h":"Wolves","a":"Everton","hg":1,"ag":1,"hs":11,"as_":12,"hst":3,"ast":4,"hc":5,"ac":5,"hf":11,"af":16,"hy":2,"ay":2,"hr":0,"ar":0},
+{"d":"2025-03-09","h":"Chelsea","a":"Leicester","hg":1,"ag":0,"hs":20,"as_":3,"hst":7,"ast":3,"hc":12,"ac":2,"hf":12,"af":13,"hy":1,"ay":0,"hr":0,"ar":0},
+{"d":"2025-03-09","h":"Man United","a":"Arsenal","hg":1,"ag":1,"hs":10,"as_":17,"hst":6,"ast":6,"hc":2,"ac":9,"hf":8,"af":11,"hy":0,"ay":1,"hr":0,"ar":0},
+{"d":"2025-03-09","h":"Tottenham","a":"Bournemouth","hg":2,"ag":2,"hs":12,"as_":17,"hst":4,"ast":8,"hc":3,"ac":6,"hf":15,"af":16,"hy":3,"ay":3,"hr":0,"ar":0},
+{"d":"2025-03-10","h":"West Ham","a":"Newcastle","hg":0,"ag":1,"hs":9,"as_":9,"hst":2,"ast":3,"hc":3,"ac":4,"hf":7,"af":15,"hy":0,"ay":1,"hr":0,"ar":0},
+{"d":"2025-03-15","h":"Bournemouth","a":"Brentford","hg":1,"ag":2,"hs":17,"as_":10,"hst":5,"ast":4,"hc":4,"ac":3,"hf":13,"af":7,"hy":3,"ay":0,"hr":0,"ar":0},
+{"d":"2025-03-15","h":"Everton","a":"West Ham","hg":1,"ag":1,"hs":13,"as_":10,"hst":5,"ast":5,"hc":6,"ac":5,"hf":12,"af":8,"hy":1,"ay":2,"hr":0,"ar":0},
+{"d":"2025-03-15","h":"Ipswich","a":"Nott'm Forest","hg":2,"ag":4,"hs":11,"as_":11,"hst":4,"ast":6,"hc":6,"ac":3,"hf":4,"af":13,"hy":1,"ay":1,"hr":0,"ar":0},
+{"d":"2025-03-15","h":"Man City","a":"Brighton","hg":2,"ag":2,"hs":11,"as_":15,"hst":3,"ast":3,"hc":4,"ac":5,"hf":10,"af":10,"hy":2,"ay":5,"hr":0,"ar":0},
+{"d":"2025-03-15","h":"Southampton","a":"Wolves","hg":1,"ag":2,"hs":10,"as_":5,"hst":3,"ast":3,"hc":5,"ac":1,"hf":12,"af":13,"hy":0,"ay":0,"hr":0,"ar":0},
+{"d":"2025-03-16","h":"Arsenal","a":"Chelsea","hg":1,"ag":0,"hs":12,"as_":8,"hst":4,"ast":2,"hc":5,"ac":4,"hf":10,"af":13,"hy":3,"ay":3,"hr":0,"ar":0},
+{"d":"2025-03-16","h":"Fulham","a":"Tottenham","hg":2,"ag":0,"hs":13,"as_":12,"hst":4,"ast":4,"hc":6,"ac":5,"hf":13,"af":10,"hy":0,"ay":0,"hr":0,"ar":0},
+{"d":"2025-03-16","h":"Leicester","a":"Man United","hg":0,"ag":3,"hs":11,"as_":18,"hst":3,"ast":5,"hc":6,"ac":4,"hf":6,"af":6,"hy":2,"ay":0,"hr":0,"ar":0},
+{"d":"2025-04-01","h":"Arsenal","a":"Fulham","hg":2,"ag":1,"hs":17,"as_":9,"hst":4,"ast":3,"hc":5,"ac":4,"hf":2,"af":10,"hy":1,"ay":2,"hr":0,"ar":0},
+{"d":"2025-04-01","h":"Nott'm Forest","a":"Man United","hg":1,"ag":0,"hs":8,"as_":23,"hst":2,"ast":6,"hc":3,"ac":10,"hf":5,"af":12,"hy":1,"ay":3,"hr":0,"ar":0},
+{"d":"2025-04-01","h":"Wolves","a":"West Ham","hg":1,"ag":0,"hs":9,"as_":10,"hst":2,"ast":1,"hc":1,"ac":2,"hf":16,"af":12,"hy":4,"ay":2,"hr":0,"ar":0},
+{"d":"2025-04-02","h":"Bournemouth","a":"Ipswich","hg":1,"ag":2,"hs":24,"as_":10,"hst":7,"ast":2,"hc":8,"ac":3,"hf":14,"af":15,"hy":1,"ay":2,"hr":0,"ar":0},
+{"d":"2025-04-02","h":"Brighton","a":"Aston Villa","hg":0,"ag":3,"hs":11,"as_":8,"hst":4,"ast":5,"hc":4,"ac":0,"hf":16,"af":11,"hy":1,"ay":3,"hr":0,"ar":0},
+{"d":"2025-04-02","h":"Liverpool","a":"Everton","hg":1,"ag":0,"hs":17,"as_":5,"hst":3,"ast":0,"hc":11,"ac":5,"hf":7,"af":11,"hy":2,"ay":2,"hr":0,"ar":0},
+{"d":"2025-04-02","h":"Man City","a":"Leicester","hg":2,"ag":0,"hs":18,"as_":2,"hst":5,"ast":0,"hc":5,"ac":0,"hf":11,"af":8,"hy":1,"ay":4,"hr":0,"ar":0},
+{"d":"2025-04-02","h":"Newcastle","a":"Brentford","hg":2,"ag":1,"hs":21,"as_":12,"hst":4,"ast":3,"hc":4,"ac":5,"hf":12,"af":12,"hy":1,"ay":1,"hr":0,"ar":0},
+{"d":"2025-04-02","h":"Southampton","a":"Crystal Palace","hg":1,"ag":1,"hs":8,"as_":9,"hst":2,"ast":3,"hc":2,"ac":2,"hf":14,"af":9,"hy":2,"ay":1,"hr":0,"ar":0},
+{"d":"2025-04-03","h":"Chelsea","a":"Tottenham","hg":1,"ag":0,"hs":11,"as_":8,"hst":5,"ast":2,"hc":4,"ac":6,"hf":7,"af":16,"hy":5,"ay":5,"hr":0,"ar":0},
+{"d":"2025-04-05","h":"Aston Villa","a":"Nott'm Forest","hg":2,"ag":1,"hs":17,"as_":19,"hst":8,"ast":3,"hc":4,"ac":4,"hf":7,"af":15,"hy":2,"ay":2,"hr":0,"ar":0},
+{"d":"2025-04-05","h":"Crystal Palace","a":"Brighton","hg":2,"ag":1,"hs":8,"as_":11,"hst":3,"ast":5,"hc":2,"ac":4,"hf":12,"af":13,"hy":0,"ay":1,"hr":2,"ar":1},
+{"d":"2025-04-05","h":"Everton","a":"Arsenal","hg":1,"ag":1,"hs":5,"as_":14,"hst":2,"ast":5,"hc":3,"ac":8,"hf":17,"af":13,"hy":3,"ay":1,"hr":0,"ar":0},
+{"d":"2025-04-05","h":"Ipswich","a":"Wolves","hg":1,"ag":2,"hs":6,"as_":22,"hst":2,"ast":7,"hc":4,"ac":8,"hf":12,"af":16,"hy":2,"ay":2,"hr":0,"ar":0},
+{"d":"2025-04-05","h":"West Ham","a":"Bournemouth","hg":2,"ag":2,"hs":9,"as_":11,"hst":3,"ast":4,"hc":4,"ac":7,"hf":13,"af":13,"hy":2,"ay":2,"hr":0,"ar":0},
+{"d":"2025-04-06","h":"Brentford","a":"Chelsea","hg":0,"ag":0,"hs":9,"as_":21,"hst":2,"ast":5,"hc":3,"ac":6,"hf":12,"af":12,"hy":1,"ay":3,"hr":0,"ar":0},
+{"d":"2025-04-06","h":"Fulham","a":"Liverpool","hg":3,"ag":2,"hs":12,"as_":14,"hst":6,"ast":6,"hc":4,"ac":4,"hf":10,"af":9,"hy":3,"ay":0,"hr":0,"ar":0},
+{"d":"2025-04-06","h":"Man United","a":"Man City","hg":0,"ag":0,"hs":13,"as_":9,"hst":2,"ast":5,"hc":5,"ac":3,"hf":13,"af":9,"hy":3,"ay":2,"hr":0,"ar":0},
+{"d":"2025-04-06","h":"Tottenham","a":"Southampton","hg":3,"ag":1,"hs":13,"as_":12,"hst":8,"ast":4,"hc":4,"ac":1,"hf":16,"af":20,"hy":1,"ay":1,"hr":0,"ar":0},
+{"d":"2025-04-07","h":"Leicester","a":"Newcastle","hg":0,"ag":3,"hs":7,"as_":16,"hst":2,"ast":5,"hc":12,"ac":2,"hf":8,"af":9,"hy":2,"ay":0,"hr":0,"ar":0},
+{"d":"2025-04-12","h":"Arsenal","a":"Brentford","hg":1,"ag":1,"hs":14,"as_":3,"hst":3,"ast":2,"hc":13,"ac":5,"hf":7,"af":9,"hy":1,"ay":3,"hr":0,"ar":0},
+{"d":"2025-04-12","h":"Brighton","a":"Leicester","hg":2,"ag":2,"hs":21,"as_":15,"hst":7,"ast":6,"hc":3,"ac":6,"hf":9,"af":11,"hy":2,"ay":5,"hr":0,"ar":0},
+{"d":"2025-04-12","h":"Man City","a":"Crystal Palace","hg":5,"ag":2,"hs":21,"as_":8,"hst":9,"ast":3,"hc":1,"ac":4,"hf":10,"af":16,"hy":2,"ay":3,"hr":0,"ar":0},
+{"d":"2025-04-12","h":"Nott'm Forest","a":"Everton","hg":0,"ag":1,"hs":10,"as_":13,"hst":5,"ast":5,"hc":1,"ac":7,"hf":9,"af":13,"hy":0,"ay":3,"hr":0,"ar":0},
+{"d":"2025-04-12","h":"Southampton","a":"Aston Villa","hg":0,"ag":3,"hs":7,"as_":25,"hst":2,"ast":10,"hc":2,"ac":14,"hf":11,"af":4,"hy":3,"ay":1,"hr":0,"ar":0},
+{"d":"2025-04-13","h":"Chelsea","a":"Ipswich","hg":2,"ag":2,"hs":34,"as_":13,"hst":9,"ast":4,"hc":15,"ac":4,"hf":11,"af":7,"hy":2,"ay":2,"hr":0,"ar":0},
+{"d":"2025-04-13","h":"Liverpool","a":"West Ham","hg":2,"ag":1,"hs":15,"as_":11,"hst":6,"ast":4,"hc":10,"ac":3,"hf":15,"af":8,"hy":0,"ay":2,"hr":0,"ar":0},
+{"d":"2025-04-13","h":"Newcastle","a":"Man United","hg":4,"ag":1,"hs":13,"as_":9,"hst":6,"ast":5,"hc":7,"ac":2,"hf":7,"af":9,"hy":0,"ay":2,"hr":0,"ar":0},
+{"d":"2025-04-13","h":"Wolves","a":"Tottenham","hg":4,"ag":2,"hs":13,"as_":11,"hst":5,"ast":4,"hc":1,"ac":4,"hf":12,"af":15,"hy":1,"ay":2,"hr":0,"ar":0},
+{"d":"2025-04-14","h":"Bournemouth","a":"Fulham","hg":1,"ag":0,"hs":12,"as_":12,"hst":3,"ast":7,"hc":6,"ac":9,"hf":11,"af":10,"hy":3,"ay":2,"hr":0,"ar":0},
+{"d":"2025-04-16","h":"Newcastle","a":"Crystal Palace","hg":5,"ag":0,"hs":14,"as_":11,"hst":7,"ast":4,"hc":5,"ac":4,"hf":9,"af":15,"hy":2,"ay":3,"hr":0,"ar":0},
+{"d":"2025-04-19","h":"Aston Villa","a":"Newcastle","hg":4,"ag":1,"hs":23,"as_":10,"hst":9,"ast":3,"hc":7,"ac":7,"hf":9,"af":12,"hy":1,"ay":3,"hr":0,"ar":0},
+{"d":"2025-04-19","h":"Brentford","a":"Brighton","hg":4,"ag":2,"hs":16,"as_":12,"hst":8,"ast":3,"hc":4,"ac":8,"hf":7,"af":11,"hy":3,"ay":3,"hr":0,"ar":1},
+{"d":"2025-04-19","h":"Crystal Palace","a":"Bournemouth","hg":0,"ag":0,"hs":5,"as_":15,"hst":0,"ast":4,"hc":5,"ac":4,"hf":13,"af":10,"hy":3,"ay":4,"hr":1,"ar":0},
+{"d":"2025-04-19","h":"Everton","a":"Man City","hg":0,"ag":2,"hs":8,"as_":12,"hst":3,"ast":7,"hc":2,"ac":5,"hf":7,"af":6,"hy":4,"ay":0,"hr":0,"ar":0},
+{"d":"2025-04-19","h":"West Ham","a":"Southampton","hg":1,"ag":1,"hs":12,"as_":15,"hst":4,"ast":4,"hc":2,"ac":5,"hf":14,"af":13,"hy":2,"ay":1,"hr":0,"ar":0},
+{"d":"2025-04-20","h":"Fulham","a":"Chelsea","hg":1,"ag":2,"hs":6,"as_":13,"hst":1,"ast":8,"hc":6,"ac":4,"hf":13,"af":9,"hy":1,"ay":3,"hr":0,"ar":0},
+{"d":"2025-04-20","h":"Ipswich","a":"Arsenal","hg":0,"ag":4,"hs":4,"as_":24,"hst":0,"ast":7,"hc":0,"ac":12,"hf":10,"af":7,"hy":0,"ay":0,"hr":1,"ar":0},
+{"d":"2025-04-20","h":"Leicester","a":"Liverpool","hg":0,"ag":1,"hs":5,"as_":28,"hst":0,"ast":10,"hc":1,"ac":13,"hf":11,"af":7,"hy":1,"ay":2,"hr":0,"ar":0},
+{"d":"2025-04-20","h":"Man United","a":"Wolves","hg":0,"ag":1,"hs":12,"as_":4,"hst":2,"ast":2,"hc":9,"ac":2,"hf":11,"af":18,"hy":2,"ay":3,"hr":0,"ar":0},
+{"d":"2025-04-21","h":"Tottenham","a":"Nott'm Forest","hg":1,"ag":2,"hs":22,"as_":4,"hst":6,"ast":3,"hc":7,"ac":1,"hf":11,"af":12,"hy":1,"ay":4,"hr":0,"ar":0},
+{"d":"2025-04-22","h":"Man City","a":"Aston Villa","hg":2,"ag":1,"hs":14,"as_":7,"hst":6,"ast":3,"hc":10,"ac":2,"hf":9,"af":10,"hy":3,"ay":3,"hr":0,"ar":0},
+{"d":"2025-04-23","h":"Arsenal","a":"Crystal Palace","hg":2,"ag":2,"hs":12,"as_":15,"hst":6,"ast":4,"hc":3,"ac":6,"hf":4,"af":6,"hy":1,"ay":1,"hr":0,"ar":0},
+{"d":"2025-04-26","h":"Brighton","a":"West Ham","hg":3,"ag":2,"hs":16,"as_":12,"hst":9,"ast":4,"hc":8,"ac":1,"hf":7,"af":9,"hy":1,"ay":1,"hr":0,"ar":0},
+{"d":"2025-04-26","h":"Chelsea","a":"Everton","hg":1,"ag":0,"hs":10,"as_":6,"hst":7,"ast":3,"hc":10,"ac":2,"hf":11,"af":11,"hy":0,"ay":0,"hr":0,"ar":0},
+{"d":"2025-04-26","h":"Newcastle","a":"Ipswich","hg":3,"ag":0,"hs":25,"as_":4,"hst":5,"ast":0,"hc":11,"ac":2,"hf":9,"af":9,"hy":1,"ay":2,"hr":0,"ar":1},
+{"d":"2025-04-26","h":"Southampton","a":"Fulham","hg":1,"ag":2,"hs":7,"as_":26,"hst":3,"ast":5,"hc":0,"ac":13,"hf":10,"af":12,"hy":1,"ay":1,"hr":0,"ar":0},
+{"d":"2025-04-26","h":"Wolves","a":"Leicester","hg":3,"ag":0,"hs":20,"as_":8,"hst":6,"ast":2,"hc":4,"ac":2,"hf":7,"af":17,"hy":1,"ay":4,"hr":0,"ar":0},
+{"d":"2025-04-27","h":"Bournemouth","a":"Man United","hg":1,"ag":1,"hs":8,"as_":25,"hst":1,"ast":6,"hc":5,"ac":10,"hf":11,"af":12,"hy":4,"ay":2,"hr":1,"ar":0},
+{"d":"2025-04-27","h":"Liverpool","a":"Tottenham","hg":5,"ag":1,"hs":25,"as_":8,"hst":8,"ast":3,"hc":8,"ac":2,"hf":16,"af":9,"hy":2,"ay":1,"hr":0,"ar":0},
+{"d":"2025-05-01","h":"Nott'm Forest","a":"Brentford","hg":0,"ag":2,"hs":14,"as_":11,"hst":5,"ast":3,"hc":4,"ac":5,"hf":10,"af":12,"hy":3,"ay":5,"hr":0,"ar":0},
+{"d":"2025-05-02","h":"Man City","a":"Wolves","hg":1,"ag":0,"hs":9,"as_":6,"hst":2,"ast":1,"hc":4,"ac":5,"hf":7,"af":11,"hy":0,"ay":0,"hr":0,"ar":0},
+{"d":"2025-05-03","h":"Arsenal","a":"Bournemouth","hg":1,"ag":2,"hs":13,"as_":9,"hst":4,"ast":2,"hc":2,"ac":3,"hf":7,"af":16,"hy":0,"ay":2,"hr":0,"ar":0},
+{"d":"2025-05-03","h":"Aston Villa","a":"Fulham","hg":1,"ag":0,"hs":10,"as_":11,"hst":3,"ast":3,"hc":5,"ac":3,"hf":6,"af":17,"hy":0,"ay":5,"hr":0,"ar":0},
+{"d":"2025-05-03","h":"Everton","a":"Ipswich","hg":2,"ag":2,"hs":8,"as_":12,"hst":3,"ast":5,"hc":3,"ac":3,"hf":12,"af":15,"hy":4,"ay":4,"hr":0,"ar":0},
+{"d":"2025-05-03","h":"Leicester","a":"Southampton","hg":2,"ag":0,"hs":14,"as_":8,"hst":4,"ast":2,"hc":7,"ac":7,"hf":12,"af":13,"hy":1,"ay":3,"hr":0,"ar":0},
+{"d":"2025-05-04","h":"Brentford","a":"Man United","hg":4,"ag":3,"hs":12,"as_":14,"hst":6,"ast":5,"hc":7,"ac":4,"hf":8,"af":10,"hy":0,"ay":2,"hr":0,"ar":0},
+{"d":"2025-05-04","h":"Brighton","a":"Newcastle","hg":1,"ag":1,"hs":5,"as_":13,"hst":2,"ast":5,"hc":1,"ac":4,"hf":15,"af":10,"hy":2,"ay":1,"hr":0,"ar":0},
+{"d":"2025-05-04","h":"Chelsea","a":"Liverpool","hg":3,"ag":1,"hs":17,"as_":11,"hst":7,"ast":2,"hc":3,"ac":6,"hf":10,"af":11,"hy":2,"ay":2,"hr":0,"ar":0},
+{"d":"2025-05-04","h":"West Ham","a":"Tottenham","hg":1,"ag":1,"hs":11,"as_":7,"hst":2,"ast":2,"hc":1,"ac":3,"hf":18,"af":15,"hy":2,"ay":2,"hr":0,"ar":0},
+{"d":"2025-05-05","h":"Crystal Palace","a":"Nott'm Forest","hg":1,"ag":1,"hs":20,"as_":12,"hst":3,"ast":4,"hc":7,"ac":4,"hf":9,"af":15,"hy":3,"ay":8,"hr":0,"ar":0},
+{"d":"2025-05-10","h":"Bournemouth","a":"Aston Villa","hg":0,"ag":1,"hs":10,"as_":6,"hst":4,"ast":3,"hc":10,"ac":0,"hf":19,"af":12,"hy":4,"ay":3,"hr":0,"ar":1},
+{"d":"2025-05-10","h":"Fulham","a":"Everton","hg":1,"ag":3,"hs":18,"as_":11,"hst":6,"ast":7,"hc":5,"ac":5,"hf":15,"af":9,"hy":1,"ay":0,"hr":0,"ar":0},
+{"d":"2025-05-10","h":"Ipswich","a":"Brentford","hg":0,"ag":1,"hs":11,"as_":15,"hst":4,"ast":5,"hc":5,"ac":6,"hf":6,"af":12,"hy":2,"ay":4,"hr":0,"ar":0},
+{"d":"2025-05-10","h":"Southampton","a":"Man City","hg":0,"ag":0,"hs":2,"as_":26,"hst":0,"ast":5,"hc":1,"ac":15,"hf":9,"af":8,"hy":2,"ay":0,"hr":0,"ar":0},
+{"d":"2025-05-10","h":"Wolves","a":"Brighton","hg":0,"ag":2,"hs":10,"as_":7,"hst":3,"ast":2,"hc":7,"ac":4,"hf":8,"af":12,"hy":1,"ay":1,"hr":0,"ar":0},
+{"d":"2025-05-11","h":"Liverpool","a":"Arsenal","hg":2,"ag":2,"hs":14,"as_":15,"hst":5,"ast":7,"hc":3,"ac":1,"hf":13,"af":10,"hy":1,"ay":1,"hr":0,"ar":1},
+{"d":"2025-05-11","h":"Man United","a":"West Ham","hg":0,"ag":2,"hs":20,"as_":9,"hst":5,"ast":4,"hc":8,"ac":5,"hf":3,"af":13,"hy":0,"ay":1,"hr":0,"ar":0},
+{"d":"2025-05-11","h":"Newcastle","a":"Chelsea","hg":2,"ag":0,"hs":15,"as_":10,"hst":6,"ast":3,"hc":2,"ac":8,"hf":9,"af":13,"hy":4,"ay":2,"hr":0,"ar":1},
+{"d":"2025-05-11","h":"Nott'm Forest","a":"Leicester","hg":2,"ag":2,"hs":15,"as_":10,"hst":4,"ast":6,"hc":4,"ac":4,"hf":11,"af":11,"hy":3,"ay":3,"hr":0,"ar":0},
+{"d":"2025-05-11","h":"Tottenham","a":"Crystal Palace","hg":0,"ag":2,"hs":8,"as_":23,"hst":1,"ast":10,"hc":4,"ac":8,"hf":12,"af":10,"hy":1,"ay":1,"hr":0,"ar":0},
+{"d":"2025-05-16","h":"Aston Villa","a":"Tottenham","hg":2,"ag":0,"hs":18,"as_":3,"hst":7,"ast":1,"hc":9,"ac":1,"hf":5,"af":12,"hy":1,"ay":2,"hr":0,"ar":0},
+{"d":"2025-05-16","h":"Chelsea","a":"Man United","hg":1,"ag":0,"hs":11,"as_":4,"hst":3,"ast":1,"hc":7,"ac":2,"hf":10,"af":14,"hy":1,"ay":6,"hr":0,"ar":0},
+{"d":"2025-05-18","h":"Arsenal","a":"Newcastle","hg":1,"ag":0,"hs":12,"as_":14,"hst":4,"ast":5,"hc":10,"ac":7,"hf":9,"af":9,"hy":3,"ay":3,"hr":0,"ar":0},
+{"d":"2025-05-18","h":"Brentford","a":"Fulham","hg":2,"ag":3,"hs":11,"as_":16,"hst":6,"ast":7,"hc":5,"ac":3,"hf":12,"af":8,"hy":4,"ay":4,"hr":0,"ar":0},
+{"d":"2025-05-18","h":"Everton","a":"Southampton","hg":2,"ag":0,"hs":13,"as_":6,"hst":5,"ast":2,"hc":4,"ac":5,"hf":6,"af":10,"hy":1,"ay":1,"hr":0,"ar":0},
+{"d":"2025-05-18","h":"Leicester","a":"Ipswich","hg":2,"ag":0,"hs":9,"as_":20,"hst":3,"ast":2,"hc":2,"ac":2,"hf":15,"af":12,"hy":1,"ay":0,"hr":0,"ar":0},
+{"d":"2025-05-18","h":"West Ham","a":"Nott'm Forest","hg":1,"ag":2,"hs":16,"as_":10,"hst":5,"ast":5,"hc":8,"ac":7,"hf":14,"af":7,"hy":6,"ay":3,"hr":0,"ar":0},
+{"d":"2025-05-19","h":"Brighton","a":"Liverpool","hg":3,"ag":2,"hs":25,"as_":18,"hst":12,"ast":5,"hc":3,"ac":3,"hf":9,"af":8,"hy":1,"ay":0,"hr":0,"ar":0},
+{"d":"2025-05-20","h":"Crystal Palace","a":"Wolves","hg":4,"ag":2,"hs":14,"as_":12,"hst":10,"ast":3,"hc":0,"ac":10,"hf":14,"af":8,"hy":1,"ay":2,"hr":0,"ar":0},
+{"d":"2025-05-20","h":"Man City","a":"Bournemouth","hg":3,"ag":1,"hs":12,"as_":8,"hst":5,"ast":2,"hc":3,"ac":1,"hf":7,"af":13,"hy":1,"ay":3,"hr":1,"ar":1},
+{"d":"2025-05-25","h":"Bournemouth","a":"Leicester","hg":2,"ag":0,"hs":20,"as_":3,"hst":7,"ast":0,"hc":6,"ac":1,"hf":19,"af":16,"hy":0,"ay":2,"hr":0,"ar":0},
+{"d":"2025-05-25","h":"Fulham","a":"Man City","hg":0,"ag":2,"hs":13,"as_":20,"hst":3,"ast":5,"hc":1,"ac":6,"hf":11,"af":5,"hy":0,"ay":0,"hr":0,"ar":0},
+{"d":"2025-05-25","h":"Ipswich","a":"West Ham","hg":1,"ag":3,"hs":14,"as_":10,"hst":4,"ast":6,"hc":4,"ac":0,"hf":10,"af":9,"hy":1,"ay":1,"hr":0,"ar":0},
+{"d":"2025-05-25","h":"Liverpool","a":"Crystal Palace","hg":1,"ag":1,"hs":14,"as_":8,"hst":3,"ast":5,"hc":11,"ac":0,"hf":7,"af":10,"hy":1,"ay":0,"hr":1,"ar":0},
+{"d":"2025-05-25","h":"Man United","a":"Aston Villa","hg":2,"ag":0,"hs":25,"as_":6,"hst":10,"ast":1,"hc":4,"ac":3,"hf":10,"af":10,"hy":2,"ay":2,"hr":0,"ar":1},
+{"d":"2025-05-25","h":"Newcastle","a":"Everton","hg":0,"ag":1,"hs":17,"as_":14,"hst":6,"ast":6,"hc":12,"ac":3,"hf":12,"af":9,"hy":1,"ay":4,"hr":0,"ar":0},
+{"d":"2025-05-25","h":"Nott'm Forest","a":"Chelsea","hg":0,"ag":1,"hs":10,"as_":6,"hst":2,"ast":2,"hc":7,"ac":4,"hf":10,"af":11,"hy":2,"ay":2,"hr":0,"ar":0},
+{"d":"2025-05-25","h":"Southampton","a":"Arsenal","hg":1,"ag":2,"hs":7,"as_":23,"hst":2,"ast":8,"hc":5,"ac":8,"hf":7,"af":8,"hy":0,"ay":0,"hr":0,"ar":0},
+{"d":"2025-05-25","h":"Tottenham","a":"Brighton","hg":1,"ag":4,"hs":4,"as_":23,"hst":2,"ast":8,"hc":2,"ac":11,"hf":13,"af":8,"hy":3,"ay":1,"hr":0,"ar":0},
+{"d":"2025-05-25","h":"Wolves","a":"Brentford","hg":1,"ag":1,"hs":18,"as_":13,"hst":6,"ast":7,"hc":8,"ac":3,"hf":7,"af":9,"hy":2,"ay":1,"hr":0,"ar":0}]
+;
+
+const root = document.documentElement;
+const DATES = [...new Set(MATCHES.map(m => m.d))].sort();
+const TEAMS = [...new Set(MATCHES.flatMap(m => [m.h, m.a]))].sort();
+const state = { i: DATES.indexOf("2025-02-01"), view: "table", venue: "overall", sort: null, page: 0, paused: false };
+
+// One entry per team per match, from that team's side.
+function entries(cutoff) {
+  const out = [];
+  for (const m of MATCHES) {
+    if (m.d > cutoff) continue;
+    const side = (team, isHome) => {
+      const gf = isHome ? m.hg : m.ag, ga = isHome ? m.ag : m.hg;
+      return {
+        team, d: m.d, home: isHome, opp: isHome ? m.a : m.h, gf, ga, res: gf > ga ? "W" : gf === ga ? "D" : "L",
+        shots: isHome ? m.hs : m.as_, sot: isHome ? m.hst : m.ast, shotsAg: isHome ? m.as_ : m.hs,
+        corners: isHome ? m.hc : m.ac, fouls: isHome ? m.hf : m.af, y: isHome ? m.hy : m.ay, r: isHome ? m.hr : m.ar,
+      };
+    };
+    out.push(side(m.h, true), side(m.a, false));
+  }
+  return out;
+}
+
+function byTeam(list) {
+  const map = new Map(TEAMS.map(t => [t, []]));
+  for (const e of list) map.get(e.team).push(e);
+  return map;
+}
+
+const pts = r => (r === "W" ? 3 : r === "D" ? 1 : 0);
+const per = (a, b) => (b ? a / b : 0);
+const one = v => v.toFixed(1);
+const pct = v => Math.round(v * 100) + "%";
+const sign = v => (v > 0 ? "+" + v : String(v));
+
+function summarise(team, list) {
+  const n = list.length, sum = k => list.reduce((s, e) => s + (e[k] || 0), 0);
+  const w = list.filter(e => e.res === "W").length, d = list.filter(e => e.res === "D").length;
+  const gf = sum("gf"), ga = sum("ga");
+  return {
+    team, p: n, w, d, l: n - w - d, gf, ga, gd: gf - ga, pts: w * 3 + d,
+    form: list.map(e => e.res).join(""),
+    gfpg: per(gf, n), gapg: per(ga, n),
+    cs: list.filter(e => e.ga === 0).length, fts: list.filter(e => e.gf === 0).length,
+    btts: per(list.filter(e => e.gf > 0 && e.ga > 0).length, n), o25: per(list.filter(e => e.gf + e.ga > 2).length, n),
+    shotspg: per(sum("shots"), n), sotpg: per(sum("sot"), n), acc: per(sum("sot"), sum("shots")),
+    cornerspg: per(sum("corners"), n), shotsagpg: per(sum("shotsAg"), n),
+    foulspg: per(sum("fouls"), n), y: sum("y"), r: sum("r"), cardspg: per(sum("y") + sum("r"), n),
+  };
+}
+
+// Column sets per view. `key` marks the default sort column.
+const VIEWS = {
+  table: {
+    title: "League table",
+    cols: [["p", "P"], ["w", "W"], ["d", "D"], ["l", "L"], ["gf", "F"], ["ga", "A"], ["gd", "GD", sign], ["pts", "Pts", null, true]],
+    sort: { k: "pts", dir: -1 }, chips: true,
+  },
+  form: {
+    title: "Form table",
+    cols: [["p", "P"], ["w", "W"], ["d", "D"], ["l", "L"], ["gf", "F"], ["ga", "A"], ["gd", "GD", sign], ["pts", "Pts", null, true]],
+    sort: { k: "pts", dir: -1 }, chips: true, windowed: true,
+  },
+  goals: {
+    title: "Goals",
+    cols: [["p", "P"], ["gfpg", "For/g", one, true], ["gapg", "Agst/g", one], ["cs", "Clean sh."], ["fts", "Failed to sc."], ["btts", "BTTS", pct], ["o25", "Over 2.5", pct]],
+    sort: { k: "gfpg", dir: -1 },
+  },
+  shots: {
+    title: "Shots",
+    cols: [["p", "P"], ["shotspg", "Shots/g", one, true], ["sotpg", "On target/g", one], ["acc", "Accuracy", pct], ["shotsagpg", "Faced/g", one], ["cornerspg", "Corners/g", one]],
+    sort: { k: "shotspg", dir: -1 },
+  },
+  discipline: {
+    title: "Discipline",
+    cols: [["p", "P"], ["foulspg", "Fouls/g", one], ["y", "Yellows"], ["r", "Reds"], ["cardspg", "Cards/g", one, true]],
+    sort: { k: "cardspg", dir: 1 },
+  },
+};
+
+function windowSize() { return state.venue === "overall" ? 6 : 4; }
+
+function rows() {
+  const cutoff = DATES[state.i];
+  const map = byTeam(entries(cutoff));
+  const v = VIEWS[state.view];
+  const out = [];
+  for (const [team, list] of map) {
+    let l = list.filter(e => state.venue === "overall" || (state.venue === "home") === e.home);
+    const chipList = l.slice(-windowSize());
+    if (v.windowed) l = chipList;
+    const s = summarise(team, l);
+    s.chips = chipList;
+    out.push(s);
+  }
+  const sort = state.sort || v.sort;
+  out.sort((a, b) => {
+    const d = (a[sort.k] - b[sort.k]) * sort.dir;
+    if (d) return d;
+    return (b.pts - a.pts) || (b.gd - a.gd) || (b.gf - a.gf) || a.team.localeCompare(b.team);
+  });
+  return out;
+}
+
+// Form chips; hovering one shows the result, e.g. "Won 2–1 v Arsenal (H) · Sat 25 Jan".
+function chipsEl(list) {
+  const span = document.createElement("span");
+  span.className = "form";
+  for (const e of list) {
+    const c = document.createElement("span");
+    c.className = "f " + e.res;
+    c.textContent = e.res;
+    const word = e.res === "W" ? "Won" : e.res === "D" ? "Drew" : "Lost";
+    const when = new Date(e.d + "T12:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+    const text = `${word} ${e.gf}–${e.ga} v ${e.opp} (${e.home ? "H" : "A"}) · ${when}`;
+    c.title = text;
+    c.setAttribute("aria-label", text);
+    c.tabIndex = 0;
+    span.appendChild(c);
+  }
+  return span;
+}
+
+function renderTable() {
+  const v = VIEWS[state.view];
+  const sort = state.sort || v.sort;
+  const table = document.getElementById("stats-table");
+  const venueWord = { overall: "", home: " · Home", away: " · Away" }[state.venue];
+  document.getElementById("view-title").textContent = v.title + venueWord;
+  let head = '<thead><tr><th class="l">#</th><th class="l">Team</th>';
+  for (const [k, label] of v.cols) {
+    const s = sort.k === k ? ` aria-sort="${sort.dir < 0 ? "descending" : "ascending"}"` : "";
+    head += `<th${s}><button type="button" data-sort="${k}">${label}</button></th>`;
+  }
+  if (v.chips) head += `<th class="l">Last ${windowSize()}</th>`;
+  head += "</tr></thead>";
+  table.innerHTML = head + "<tbody></tbody>";
+  const body = table.querySelector("tbody");
+  rows().forEach((r, i) => {
+    const tr = document.createElement("tr");
+    if (i === 0) tr.className = "lead";
+    let html = `<td class="l pos">${i + 1}</td><td class="l team">${r.team}</td>`;
+    for (const [k, , fmt, key] of v.cols) html += `<td class="${key ? "key" : ""}">${fmt ? fmt(r[k]) : r[k]}</td>`;
+    tr.innerHTML = html;
+    if (v.chips) { const td = document.createElement("td"); td.className = "l"; td.appendChild(chipsEl(r.chips)); tr.appendChild(td); }
+    body.appendChild(tr);
+  });
+  table.querySelectorAll("[data-sort]").forEach(b => b.addEventListener("click", () => {
+    const k = b.dataset.sort;
+    const cur = state.sort || v.sort;
+    state.sort = { k, dir: cur.k === k ? -cur.dir : -1 };
+    renderTable();
+  }));
+  const notes = {
+    table: "All matches up to the date. Ties broken by goal difference, then goals scored.",
+    form: `Each team's last ${windowSize()} ${state.venue === "overall" ? "" : state.venue + " "}matches only.`,
+    goals: "Per game, season to date. BTTS: both teams scored.",
+    shots: "Per game, season to date. Accuracy: shots on target ÷ shots.",
+    discipline: "Season to date. Sorted fewest cards per game first.",
+  };
+  document.getElementById("table-note").textContent = notes[state.view] + " Click a column heading to sort.";
+}
+
+// Top performers, overall, at the chosen date.
+function performers() {
+  const map = byTeam(entries(DATES[state.i]));
+  const all = [...map].map(([team, l]) => ({ team, l }));
+  const best = (score, higher = true, min = 1) => {
+    const ok = all.filter(t => t.l.length >= min).map(t => ({ team: t.team, v: score(t.l), l: t.l }));
+    const top = higher ? Math.max(...ok.map(t => t.v)) : Math.min(...ok.map(t => t.v));
+    return { teams: ok.filter(t => t.v === top), v: top };
+  };
+  const last = n => l => l.slice(-n);
+  const unbeaten = l => { let n = 0; for (let i = l.length - 1; i >= 0 && l[i].res !== "L"; i--) n++; return n; };
+  const ppgAt = home => l => { const x = l.filter(e => e.home === home); return x.length ? x.reduce((s, e) => s + pts(e.res), 0) / x.length : 0; };
+  return [
+    { metric: "Best form, last 6", r: best(l => last(6)(l).reduce((s, e) => s + pts(e.res), 0)), unit: "pts", chips: true },
+    { metric: "Most goals, last 6", r: best(l => last(6)(l).reduce((s, e) => s + e.gf, 0)), unit: "goals" },
+    { metric: "Tightest defence, last 6", r: best(l => last(6)(l).reduce((s, e) => s + e.ga, 0), false), unit: "conceded" },
+    { metric: "Worst form, last 6", r: best(l => last(6)(l).reduce((s, e) => s + pts(e.res), 0), false), unit: "pts", chips: true },
+    { metric: "Longest unbeaten run", r: best(unbeaten), unit: "matches" },
+    { metric: "Most clean sheets", r: best(l => l.filter(e => e.ga === 0).length), unit: "this season" },
+    { metric: "Best home record", r: best(ppgAt(true), true, 3), unit: "pts per game", fmt: v => v.toFixed(2) },
+    { metric: "Best away record", r: best(ppgAt(false), true, 3), unit: "pts per game", fmt: v => v.toFixed(2) },
+  ];
+}
+
+const PER_PAGE = 4;
+function renderCards() {
+  const list = performers();
+  const pages = Math.ceil(list.length / PER_PAGE);
+  state.page = (state.page + pages) % pages;
+  const box = document.getElementById("cards");
+  box.innerHTML = "";
+  list.slice(state.page * PER_PAGE, state.page * PER_PAGE + PER_PAGE).forEach((c, idx) => {
+    const el = document.createElement("article");
+    el.className = "pcard" + (idx === 0 ? " lead-card" : "");
+    const names = c.r.teams.map(t => t.team);
+    const who = names.length > 2 ? `${names[0]} and ${names.length - 1} others` : names.join(" & ");
+    el.innerHTML = `<div class="metric">${c.metric}</div><div class="who">${who}</div><div class="value"><b class="num">${c.fmt ? c.fmt(c.r.v) : c.r.v}</b><span>${c.unit}</span></div>`;
+    if (c.chips && c.r.teams.length === 1) el.appendChild(chipsEl(c.r.teams[0].l.slice(-6)));
+    box.appendChild(el);
+  });
+  document.getElementById("dots").innerHTML = Array.from({ length: pages }, (_, i) => `<span class="${i === state.page ? "on" : ""}"></span>`).join("");
+}
+
+function renderDate() {
+  const d = DATES[state.i];
+  const nice = new Date(d + "T12:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+  document.getElementById("as-of").innerHTML = `${nice}<small>as of 23:59</small>`;
+  const played = MATCHES.filter(m => m.d <= d).length;
+  document.getElementById("played").textContent = `${played} of ${MATCHES.length} matches played`;
+  const slider = document.getElementById("date-slider");
+  slider.value = state.i;
+  slider.setAttribute("aria-valuetext", nice);
+  document.getElementById("prev-day").disabled = state.i === 0;
+  document.getElementById("next-day").disabled = state.i === DATES.length - 1;
+}
+
+function render() { renderDate(); renderTable(); renderCards(); }
+
+// Wiring.
+(function () {
+  const slider = document.getElementById("date-slider");
+  slider.max = DATES.length - 1;
+  slider.addEventListener("input", () => { state.i = +slider.value; render(); });
+  document.getElementById("prev-day").addEventListener("click", () => { state.i = Math.max(0, state.i - 1); render(); });
+  document.getElementById("next-day").addEventListener("click", () => { state.i = Math.min(DATES.length - 1, state.i + 1); render(); });
+  const fmt = d => new Date(d + "T12:00:00").toLocaleDateString("en-GB", { month: "short" });
+  const months = [];
+  for (const d of DATES) { const m = fmt(d); if (months[months.length - 1] !== m) months.push(m); }
+  document.getElementById("ticks").innerHTML = months.map(m => `<span>${m}</span>`).join("");
+
+  document.querySelectorAll("#view-pills [data-view]").forEach(b => b.addEventListener("click", () => {
+    state.view = b.dataset.view; state.sort = null;
+    document.querySelectorAll("#view-pills [data-view]").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+    renderTable();
+  }));
+  document.querySelectorAll("#venue-pills [data-venue]").forEach(b => b.addEventListener("click", () => {
+    state.venue = b.dataset.venue;
+    document.querySelectorAll("#venue-pills [data-venue]").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+    renderTable();
+  }));
+
+  document.getElementById("prev-cards").addEventListener("click", () => { state.page--; renderCards(); });
+  document.getElementById("next-cards").addEventListener("click", () => { state.page++; renderCards(); });
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const pauseBtn = document.getElementById("pause");
+  state.paused = reduce;
+  pauseBtn.textContent = state.paused ? "Play" : "Pause";
+  pauseBtn.addEventListener("click", () => { state.paused = !state.paused; pauseBtn.textContent = state.paused ? "Play" : "Pause"; });
+  setInterval(() => { if (!state.paused && !document.hidden) { state.page++; renderCards(); } }, 8000);
+
+  const darkBtn = document.getElementById("theme-dark"), lightBtn = document.getElementById("theme-light");
+  const current = () => root.getAttribute("data-theme") || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+  const sync = () => { const t = current(); darkBtn.setAttribute("aria-pressed", String(t === "dark")); lightBtn.setAttribute("aria-pressed", String(t === "light")); };
+  darkBtn.addEventListener("click", () => { root.setAttribute("data-theme", "dark"); sync(); });
+  lightBtn.addEventListener("click", () => { root.setAttribute("data-theme", "light"); sync(); });
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", sync);
+  sync();
+  render();
+})();
+</script>

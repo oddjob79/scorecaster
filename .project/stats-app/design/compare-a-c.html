@@ -1,0 +1,367 @@
+<title>Style A vs Style C</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Source+Sans+3:wght@400;600;700&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Manrope:wght@400;600;700;800&display=swap">
+<style>
+/* Layout: two columns, each scoped to its own tile's tokens; the page chrome is neutral so neither style is favoured. */
+:root {
+  --page: #eceef2; --page-fg: #1a1d24; --page-muted: #5d6472; --page-line: #d5d9e0;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { color-scheme: dark; --page: #0a0c10; --page-fg: #e8eaef; --page-muted: #9aa1ae; --page-line: #262a33; }
+}
+:root[data-theme="dark"] { color-scheme: dark; --page: #0a0c10; --page-fg: #e8eaef; --page-muted: #9aa1ae; --page-line: #262a33; }
+
+* { box-sizing: border-box; }
+body { background: var(--page); color: var(--page-fg); font: 14px/1.5 system-ui, "Segoe UI", sans-serif; }
+.wrap {
+  max-width: 1400px; margin: 0 auto;
+  padding-block: 20px 48px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 16px;
+}
+.bar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
+.bar h1 { font-size: 18px; margin: 0; }
+.bar p { margin: 0; color: var(--page-muted); }
+.toggles { display: flex; flex-wrap: wrap; gap: 8px; }
+.toggles button {
+  font: 600 13px system-ui, sans-serif; border: 1px solid var(--page-line); background: transparent; color: var(--page-fg);
+  border-radius: 6px; padding: 6px 12px; cursor: pointer;
+}
+.toggles button[aria-pressed="true"] { background: var(--page-fg); color: var(--page); }
+.cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+.cols > * { min-width: 0; }
+@media (max-width: 900px) { .cols { grid-template-columns: 1fr; } }
+.col-label { font: 700 12px system-ui, sans-serif; text-transform: uppercase; letter-spacing: 0.1em; color: var(--page-muted); margin-bottom: 6px; }
+.num { font-variant-numeric: tabular-nums; }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; font-variant-numeric: tabular-nums; }
+th, td { white-space: nowrap; text-align: right; }
+th.l, td.l { text-align: left; }
+.chart svg { width: 100%; height: auto; display: block; }
+h2, h3 { margin: 0; text-wrap: balance; }
+p { margin: 0; }
+
+/* ---------- Style A tokens and components ---------- */
+.A {
+  --bg: #0d131a; --surface: #141c26; --surface-2: #1b2532; --border: #263345; --fg: #e4ebf3; --muted: #8b9bb0;
+  --accent: #f0b445; --accent-ink: #f0b445; --on-accent: #1a1204;
+  --win: #2fb874; --draw: #6f7f94; --loss: #e0505a;
+  --band-a: rgba(240,180,69,0.07); --band-b: rgba(139,155,176,0.06); --grid: #223042;
+  color-scheme: dark;
+}
+.A.light {
+  --bg: #f3f5f8; --surface: #ffffff; --surface-2: #eef1f5; --border: #d9e0e8; --fg: #0f1720; --muted: #566578;
+  --accent: #e3a12f; --accent-ink: #8a5a08; --on-accent: #1a1204;
+  --win: #1f9a5c; --draw: #8794a6; --loss: #cf3b45;
+  --band-a: rgba(227,161,47,0.10); --band-b: rgba(86,101,120,0.06); --grid: #e3e8ee;
+  color-scheme: light;
+}
+.A { background: var(--bg); color: var(--fg); font-family: "Source Sans 3", "Segoe UI", sans-serif; font-size: 15px; border-radius: 10px; padding: 16px; display: grid; gap: 16px; }
+.A .disp { font-family: "Barlow Semi Condensed", "Arial Narrow", sans-serif; }
+.A .label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.A .card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; display: grid; gap: 12px; }
+.A h2 { font-family: "Barlow Semi Condensed", sans-serif; font-size: 22px; font-weight: 600; }
+.A .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.A .seg { display: inline-flex; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 2px; }
+.A .seg button { font: 600 13px "Source Sans 3", sans-serif; color: var(--muted); background: transparent; border: 0; padding: 5px 10px; border-radius: 6px; }
+.A .seg button[aria-pressed="true"] { background: var(--surface); color: var(--fg); box-shadow: 0 0 0 1px var(--border); }
+.A .select { font: 600 14px "Source Sans 3", sans-serif; color: var(--fg); background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; }
+.A .btn { font: 600 14px "Source Sans 3", sans-serif; border-radius: 8px; padding: 8px 14px; border: 1px solid transparent; }
+.A .btn-primary { background: var(--accent); color: var(--on-accent); }
+.A .btn-secondary { background: var(--surface-2); color: var(--fg); border-color: var(--border); }
+.A .btn-ghost { background: transparent; color: var(--accent-ink); }
+.A .f { width: 20px; height: 20px; border-radius: 4px; display: inline-grid; place-items: center; font: 700 11px "Source Sans 3", sans-serif; color: #fff; }
+.A table { border-collapse: collapse; }
+.A th { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; padding: 7px 6px; border-bottom: 1px solid var(--border); }
+.A td { padding: 7px 6px; border-bottom: 1px solid var(--border); }
+.A td.pos { color: var(--muted); }
+.A td.team { font-weight: 600; }
+.A td.pts { font-weight: 700; }
+.A tr.lead td.pos { color: var(--accent-ink); font-weight: 700; }
+.A .stats { display: flex; gap: 24px; }
+.A .stat b { display: block; font: 700 34px/1 "Barlow Semi Condensed", sans-serif; }
+.A .stat span { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+
+/* ---------- Style C tokens and components ---------- */
+.C {
+  --bg: #f4f5f8; --surface: #ffffff; --fg: #12141c; --muted: #5e6475; --line: #e2e4ea; --grid: #e8eaef;
+  --league: #5a2fd1; --league-ink: #4a22b8; --on-league: #ffffff;
+  --win: #16a368; --draw: #a3a8b6; --loss: #e5484d;
+  color-scheme: light;
+}
+.C.dark {
+  --bg: #0f1016; --surface: #181a23; --fg: #f1f2f6; --muted: #9ba1b3; --line: #2a2d3a; --grid: #252836;
+  --league-ink: #a98cff; --win: #2fc183; --draw: #6f7486; --loss: #ff5c62;
+  color-scheme: dark;
+}
+.C[data-league="laliga"] { --league: #d9531a; --league-ink: #b5420f; }
+.C[data-league="bundesliga"] { --league: #c81e2c; --league-ink: #a81622; }
+.C.dark[data-league="laliga"] { --league-ink: #ff8f5a; }
+.C.dark[data-league="bundesliga"] { --league-ink: #ff6b75; }
+.C { background: var(--bg); color: var(--fg); font-family: "Manrope", "Segoe UI", sans-serif; font-size: 15px; border-radius: 20px; padding: 16px; display: grid; gap: 16px; }
+.C .soft { background: color-mix(in srgb, var(--league) 10%, var(--surface)); }
+.C .band { background: var(--league); color: var(--on-league); border-radius: 16px; padding: 16px 20px; display: grid; gap: 4px; }
+.C .band .eyebrow { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.85; }
+.C .band h2 { font-family: "Bricolage Grotesque", sans-serif; font-size: 28px; font-weight: 800; letter-spacing: -0.02em; }
+.C .eyebrow { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: var(--league-ink); }
+.C .label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.C .panel { background: var(--surface); border-radius: 20px; padding: 18px; display: grid; gap: 12px; }
+.C h3 { font-family: "Bricolage Grotesque", sans-serif; font-weight: 800; letter-spacing: -0.02em; }
+.C .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.C .pills { display: inline-flex; gap: 4px; background: var(--bg); border-radius: 999px; padding: 4px; }
+.C .pills button { font: 700 13px "Manrope", sans-serif; color: var(--muted); background: transparent; border: 0; border-radius: 999px; padding: 5px 12px; }
+.C .pills button[aria-pressed="true"] { background: var(--league); color: var(--on-league); }
+.C .select { font: 700 14px "Manrope", sans-serif; color: var(--fg); background: var(--bg); border: 0; border-radius: 999px; padding: 7px 14px; }
+.C .btn { font: 800 14px "Manrope", sans-serif; border-radius: 999px; padding: 9px 18px; border: 2px solid transparent; }
+.C .btn-primary { background: var(--league); color: var(--on-league); }
+.C .btn-secondary { background: transparent; color: var(--league-ink); border-color: var(--league); }
+.C .btn-ghost { background: transparent; color: var(--muted); }
+.C .f { width: 22px; height: 22px; border-radius: 999px; display: inline-grid; place-items: center; font: 800 11px "Manrope", sans-serif; color: #fff; }
+.C table { border-collapse: separate; border-spacing: 0 4px; }
+.C th { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; padding: 2px 6px; }
+.C td { padding: 8px 6px; background: var(--bg); }
+.C td:first-child { border-radius: 12px 0 0 12px; }
+.C td:last-child { border-radius: 0 12px 12px 0; }
+.C td.pos, .C td.pts { font-family: "Bricolage Grotesque", sans-serif; font-weight: 800; font-size: 17px; }
+.C td.team { font-weight: 800; }
+.C tr.lead td { background: color-mix(in srgb, var(--league) 14%, var(--surface)); }
+.C tr.lead td.pos { color: var(--league-ink); }
+.C .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.C .tile { border-radius: 12px; padding: 12px; }
+.C .tile b { display: block; font: 800 32px/1 "Bricolage Grotesque", sans-serif; letter-spacing: -0.02em; color: var(--league-ink); }
+.C .tile span { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+
+/* Shared component shapes */
+.form { display: inline-flex; gap: 3px; }
+.f.W { background: var(--win); } .f.D { background: var(--draw); } .f.L { background: var(--loss); }
+.form-rows { display: grid; grid-template-columns: 70px 1fr; gap: 8px 12px; align-items: center; }
+.head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+button { cursor: pointer; }
+button:focus-visible, select:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+
+@media (max-width: 480px) {
+  .A .stat b { font-size: 28px; }
+  .C .tile b { font-size: 26px; }
+}
+</style>
+
+<div class="wrap">
+  <div class="bar">
+    <div>
+      <h1>Style A vs Style C</h1>
+      <p>Same data, same components, side by side. Each theme button applies to both columns.</p>
+    </div>
+    <div class="toggles">
+      <div role="group" aria-label="Theme" class="toggles">
+        <button type="button" id="both-dark" aria-pressed="false">Both dark</button>
+        <button type="button" id="both-light" aria-pressed="false">Both light</button>
+        <button type="button" id="native" aria-pressed="true">Each in its own default</button>
+      </div>
+      <div role="group" aria-label="League tint for C" class="toggles">
+        <button type="button" data-tint="pl" aria-pressed="true">C: Premier League</button>
+        <button type="button" data-tint="laliga" aria-pressed="false">C: La Liga</button>
+        <button type="button" data-tint="bundesliga" aria-pressed="false">C: Bundesliga</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="cols">
+    <div>
+      <div class="col-label">A · Data desk</div>
+      <div class="A" id="col-a">
+        <div class="head">
+          <div><div class="label">Premier League · 2024/25</div><h2>League table</h2></div>
+          <span class="label num">1 Feb 2025</span>
+        </div>
+        <div class="card">
+          <div class="controls">
+            <select class="select" id="a-league" aria-label="League (style A)"><option>Premier League</option></select>
+            <div class="seg"><button type="button" aria-pressed="true">Table</button><button type="button" aria-pressed="false">Form</button></div>
+            <div class="seg"><button type="button" aria-pressed="true">Overall</button><button type="button" aria-pressed="false">Home</button><button type="button" aria-pressed="false">Away</button></div>
+          </div>
+          <div class="table-wrap"><table data-table></table></div>
+        </div>
+        <div class="card">
+          <div class="head">
+            <div><div class="label">Premier League · 1 Feb 2025</div><h3 class="disp" style="font-size:26px">Liverpool</h3></div>
+            <button type="button" class="btn btn-secondary">Add to compare</button>
+          </div>
+          <div class="stats">
+            <div class="stat"><b class="num">1st</b><span>Position</span></div>
+            <div class="stat"><b class="num">53</b><span>Points</span></div>
+            <div class="stat"><b class="num">+33</b><span>Goal diff</span></div>
+          </div>
+          <div class="form-rows">
+            <span class="label">Last 6</span><span class="form" data-form="WWDDWW"></span>
+            <span class="label">Home 4</span><span class="form" data-form="DWDW"></span>
+            <span class="label">Away 4</span><span class="form" data-form="WWDW"></span>
+          </div>
+        </div>
+        <div class="card chart">
+          <div class="label">Leeds · Elo at each season end</div>
+          <svg data-chart="A" viewBox="0 0 640 250" role="img" aria-label="Leeds Elo, style A"></svg>
+        </div>
+        <div class="controls">
+          <button type="button" class="btn btn-primary">Compare 3 teams</button>
+          <button type="button" class="btn btn-secondary">Copy link</button>
+          <button type="button" class="btn btn-ghost">Reset view</button>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="col-label">C · Floodlight</div>
+      <div class="C" id="col-c">
+        <div class="band">
+          <span class="eyebrow">Premier League · 2024/25</span>
+          <h2>League table</h2>
+        </div>
+        <div class="panel">
+          <div class="controls">
+            <select class="select" id="c-league" aria-label="League (style C)"><option>Premier League</option></select>
+            <div class="pills"><button type="button" aria-pressed="true">Table</button><button type="button" aria-pressed="false">Form</button></div>
+            <div class="pills"><button type="button" aria-pressed="true">Overall</button><button type="button" aria-pressed="false">Home</button><button type="button" aria-pressed="false">Away</button></div>
+          </div>
+          <div class="table-wrap"><table data-table></table></div>
+        </div>
+        <div class="panel">
+          <div class="head">
+            <div><div class="eyebrow">Premier League · 1 Feb 2025</div><h3 style="font-size:26px">Liverpool</h3></div>
+            <button type="button" class="btn btn-secondary">Add to compare</button>
+          </div>
+          <div class="tiles">
+            <div class="tile soft"><b class="num">1st</b><span>Position</span></div>
+            <div class="tile soft"><b class="num">53</b><span>Points</span></div>
+            <div class="tile soft"><b class="num">+33</b><span>Goal diff</span></div>
+          </div>
+          <div class="form-rows">
+            <span class="label">Last 6</span><span class="form" data-form="WWDDWW"></span>
+            <span class="label">Home 4</span><span class="form" data-form="DWDW"></span>
+            <span class="label">Away 4</span><span class="form" data-form="WWDW"></span>
+          </div>
+        </div>
+        <div class="panel chart">
+          <div class="label">Leeds · Elo at each season end</div>
+          <svg data-chart="C" viewBox="0 0 640 250" role="img" aria-label="Leeds Elo, style C"></svg>
+        </div>
+        <div class="controls">
+          <button type="button" class="btn btn-primary">Compare 3 teams</button>
+          <button type="button" class="btn btn-secondary">Copy link</button>
+          <button type="button" class="btn btn-ghost">Reset view</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const colA = document.getElementById("col-a");
+const colC = document.getElementById("col-c");
+
+// Premier League table before 1 Feb 2025 (from data/scorecaster.db); form oldest to newest.
+const TABLE = [
+  ["Liverpool", 22, 16, 5, 1, 54, 21, 53, "WWDDWW"],
+  ["Arsenal", 23, 13, 8, 2, 44, 21, 47, "WWDWDW"],
+  ["Nott'm Forest", 23, 13, 5, 5, 33, 27, 44, "WWWDWL"],
+  ["Man City", 23, 12, 5, 6, 47, 30, 41, "DWWDWW"],
+  ["Newcastle", 23, 12, 5, 6, 41, 27, 41, "WWWWLW"],
+  ["Chelsea", 23, 11, 7, 5, 45, 30, 40, "LLDDWL"],
+];
+const ELO = [
+  ["16/17", "E1", 1560], ["17/18", "E1", 1462], ["18/19", "E1", 1580], ["19/20", "E1", 1663],
+  ["20/21", "E0", 1559], ["21/22", "E0", 1442], ["22/23", "E0", 1392],
+  ["23/24", "E1", 1644], ["24/25", "E1", 1719], ["25/26", "E0", 1550], ["26/27", "E0", 1542],
+];
+
+function renderForm(el, seq) {
+  el.innerHTML = "";
+  for (const r of seq) {
+    const s = document.createElement("span");
+    s.className = "f " + r;
+    s.textContent = r;
+    s.setAttribute("aria-label", r === "W" ? "Win" : r === "D" ? "Draw" : "Loss");
+    el.appendChild(s);
+  }
+}
+
+document.querySelectorAll("[data-table]").forEach(table => {
+  table.innerHTML = '<thead><tr><th class="l">#</th><th class="l">Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th><th class="l">Form</th></tr></thead><tbody></tbody>';
+  const body = table.querySelector("tbody");
+  TABLE.forEach((r, i) => {
+    const [team, p, w, d, l, gf, ga, pts, form] = r;
+    const gd = gf - ga;
+    const tr = document.createElement("tr");
+    if (i === 0) tr.className = "lead";
+    tr.innerHTML = `<td class="l pos">${i + 1}</td><td class="l team">${team}</td><td>${p}</td><td>${w}</td><td>${d}</td><td>${l}</td><td>${gd > 0 ? "+" + gd : gd}</td><td class="pts">${pts}</td><td class="l"><span class="form"></span></td>`;
+    renderForm(tr.querySelector(".form"), form);
+    body.appendChild(tr);
+  });
+});
+document.querySelectorAll("[data-form]").forEach(el => renderForm(el, el.dataset.form));
+
+function drawChart(svg, scope, style) {
+  const v = n => getComputedStyle(scope).getPropertyValue(n).trim();
+  const W = 640, H = 250, L = 44, R = 12, T = 18, B = 32;
+  const yMin = 1350, yMax = 1750;
+  const step = (W - L - R) / ELO.length;
+  const x = i => L + step * (i + 0.5);
+  const y = val => T + (yMax - val) / (yMax - yMin) * (H - T - B);
+  const ns = "http://www.w3.org/2000/svg";
+  const font = style === "A" ? "Source Sans 3, sans-serif" : "Manrope, sans-serif";
+  const line = style === "A" ? v("--accent") : v("--league");
+  svg.innerHTML = "";
+  const add = (tag, attrs, text) => {
+    const el = document.createElementNS(ns, tag);
+    for (const k in attrs) el.setAttribute(k, attrs[k]);
+    if (text != null) el.textContent = text;
+    svg.appendChild(el);
+  };
+  ELO.forEach((d, i) => {
+    if (style === "A") add("rect", { x: L + step * i, y: T, width: step, height: H - T - B, fill: d[1] === "E0" ? v("--band-a") : v("--band-b") });
+    else if (d[1] === "E0") add("rect", { x: L + step * i, y: T, width: step, height: H - T - B, fill: line, "fill-opacity": 0.09 });
+  });
+  for (let g = yMin; g <= yMax; g += 100) {
+    add("line", { x1: L, x2: W - R, y1: y(g), y2: y(g), stroke: v("--grid"), "stroke-width": 1 });
+    add("text", { x: L - 6, y: y(g) + 4, "text-anchor": "end", "font-size": 11, fill: v("--muted"), "font-family": font }, g);
+  }
+  ELO.forEach((d, i) => add("text", { x: x(i), y: H - 10, "text-anchor": "middle", "font-size": 11, fill: v("--muted"), "font-family": font }, d[0]));
+  const pts = ELO.map((d, i) => `${x(i)},${y(d[2])}`);
+  if (style === "C") add("polygon", { points: `${x(0)},${H - B} ${pts.join(" ")} ${x(ELO.length - 1)},${H - B}`, fill: line, "fill-opacity": 0.14 });
+  add("polyline", { points: pts.join(" "), fill: "none", stroke: line, "stroke-width": style === "A" ? 2.5 : 3.5, "stroke-linejoin": "round", "stroke-linecap": "round" });
+  ELO.forEach((d, i) => {
+    const last = i === ELO.length - 1;
+    add("circle", { cx: x(i), cy: y(d[2]), r: last ? (style === "A" ? 5 : 6.5) : (style === "A" ? 3.5 : 4.5), fill: last ? line : v("--surface"), stroke: line, "stroke-width": style === "A" ? 2 : 3 });
+  });
+  const li = ELO.length - 1;
+  add("text", { x: x(li), y: y(ELO[li][2]) - 12, "text-anchor": "middle", "font-size": 12, "font-weight": 700, fill: v("--fg"), "font-family": font }, ELO[li][2]);
+}
+function drawAll() {
+  drawChart(document.querySelector('[data-chart="A"]'), colA, "A");
+  drawChart(document.querySelector('[data-chart="C"]'), colC, "C");
+}
+
+// Theme modes: A is dark by default, C is light by default.
+const modes = { "both-dark": [false, true], "both-light": [true, false], "native": [false, false] };
+document.querySelectorAll("#both-dark, #both-light, #native").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const [aLight, cDark] = modes[btn.id];
+    colA.classList.toggle("light", aLight);
+    colC.classList.toggle("dark", cDark);
+    document.querySelectorAll("#both-dark, #both-light, #native").forEach(b => b.setAttribute("aria-pressed", String(b === btn)));
+    drawAll();
+  });
+});
+document.querySelectorAll("[data-tint]").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const t = btn.dataset.tint;
+    if (t === "pl") colC.removeAttribute("data-league"); else colC.setAttribute("data-league", t);
+    document.querySelectorAll("[data-tint]").forEach(b => b.setAttribute("aria-pressed", String(b === btn)));
+    drawAll();
+  });
+});
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(drawAll);
+drawAll();
+</script>
