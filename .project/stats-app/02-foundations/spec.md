@@ -20,13 +20,18 @@ A running skeleton: `app.db` built from the full database, a FastAPI app serving
 - **API (`scorecaster/api/`):**
   - an app factory;
   - a read-only SQLite engine (`file:data/app.db?mode=ro`);
-  - CORS for the web origin;
   - Pydantic response models;
   - routers for `GET /competitions` and `GET /competitions/{code}/seasons`.
 
-  FastAPI serves the OpenAPI schema at `/openapi.json`.
+  FastAPI serves the OpenAPI schema at `/openapi.json`. Uvicorn runs the app, with `--reload` in development.
+- **One origin, no CORS:** the browser only ever talks to the front end's origin, and calls the API with relative `/api/...` URLs.
+  - **In development,** Vite's dev server proxies `/api` to uvicorn on `localhost:8000`.
+  - **In Docker,** nginx does the same.
+
+  The API has no CORS middleware.
 - **Web (`web/`):**
-  - Vite + React + strict TypeScript, with ESLint + Prettier.
+  - Vite + React + strict TypeScript, with ESLint + Prettier; packages managed with npm.
+  - `vite.config.ts` proxies `/api` to `http://localhost:8000`, stripping the prefix.
   - Tailwind, with its theme built from `design/style.md` tokens, plus shadcn/ui initialised.
   - TanStack Router with the four MVP routes as placeholders, and TanStack Query.
   - `npm run gen:api`: `openapi-typescript` turns `/openapi.json` into `src/api/schema.ts`, and `openapi-fetch` wraps it as the typed client.
@@ -44,11 +49,17 @@ A running skeleton: `app.db` built from the full database, a FastAPI app serving
 - `design/style.md` tokens become the Tailwind and ECharts themes.
 - `design/components.md` names the shared components phases 03–05 build.
 
+## Decisions
+
+- **Python packages:**
+  - **`fastapi` and `uvicorn`** are installed explicitly, not `fastapi[standard]`. Uvicorn is the ASGI server that listens on the port and calls the app.
+  - **`httpx`** is for tests only: FastAPI's `TestClient` is built on it. The running app doesn't need it.
+- **npm, not pnpm:** it comes with Node (v22.17.1, npm 10.9.2), and one app doesn't need pnpm's shared store.
+- **Vite proxy in development and nginx in Docker,** so there's one origin and no CORS. Front-end code uses relative `/api` URLs in every environment.
+
 ## Open questions
 
-- New Python dependencies: `fastapi`, `uvicorn`, `httpx` (for API tests). Each needs your permission. Should they go in `requirements.txt`, or in a separate `requirements-api.txt` so the pipeline's environment stays lean?
-- Node is installed (v22.17.1, npm 10.9.2). Use npm, or pnpm (faster installs, stricter dependency resolution)?
-- In development, use the Vite dev server's proxy to the API (one origin, so no CORS) and keep CORS only for unusual set-ups? Or allow the dev origin through CORS?
+- Where the new Python packages are listed: `requirements.txt`, or separate `requirements-api.txt` (fastapi, uvicorn) and `requirements-dev.txt` (httpx, pytest) so the pipeline's environment stays lean? Each package still needs your permission to install.
 
 ## Scope ledger
 
@@ -58,7 +69,7 @@ Ticked once this phase is broken into chunks.
 
 - `build_app_db.py`: scoped copy of competitions, seasons, teams, matches, features, market-average odds
 - FastAPI app factory, read-only engine, competitions and seasons endpoints
-- Vite + React + TypeScript scaffold; Tailwind theme from tokens; shadcn/ui init
+- Vite + React + TypeScript scaffold (npm) with the `/api` dev proxy; Tailwind theme from tokens; shadcn/ui init
 - TanStack Router (4 placeholder routes), TanStack Query, generated typed client
 - app shell with league and season picker
 - Zustand persisted store (theme, last league and season)
@@ -72,5 +83,4 @@ Ticked once this phase is broken into chunks.
 - `/health` endpoint for the Compose healthcheck (API)
 - request logging middleware (API)
 - `build_app_db.py --check`: compare counts against the full database (script)
-- Vite dev proxy instead of dev CORS (web config)
 - path aliases such as `@/components` (web config)

@@ -110,7 +110,8 @@ compose.yaml
 
 - The API reads `data/app.db` (section 7) through a read-only connection (`file:...?mode=ro`).
 - Pydantic response models generate the OpenAPI schema, and the front end's TypeScript types are generated from it.
-- Security baseline: parameterised queries, Pydantic validation of every parameter, CORS limited to the front end's origin, no secrets in the repo.
+- Security baseline: parameterised queries, Pydantic validation of every parameter, no secrets in the repo.
+- **One origin, no CORS:** the browser calls the API with relative `/api` URLs on the front end's own origin. The Vite dev proxy forwards them in development, and nginx in Docker, so the API needs no CORS middleware.
 
 ## 5. Front end
 
