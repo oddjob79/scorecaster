@@ -1,0 +1,92 @@
+/* web/src/index.css: replaces the template's file */
+
+/* Pull in Tailwind: its reset (preflight), theme and utilities. */
+@import "tailwindcss";
+
+/* 1. The raw tokens from design/style.md, light values first. */
+:root {
+  --bg: #f4f5f8;
+  --surface: #ffffff;
+  --fg: #12141c;
+  --muted: #5e6475;
+  --line: #e2e4ea;
+  --grid: #e8eaef;
+  --accent: #5a2fd1;
+  --accent-ink: #4a22b8;
+  --on-accent: #ffffff;
+  --series-2: #d9731a;
+  --win: #16a368;
+  --draw: #a3a8b6;
+  --loss: #e5484d;
+}
+
+/* 2. Dark values. Two blocks with the same values:
+   - the media query follows the operating system's setting, unless the
+     page has been forced light (data-theme="light", chunk 05's toggle);
+   - the attribute selector forces dark when the toggle says so. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark; /* dark scrollbars and form controls too */
+    --bg: #0f1016;
+    --surface: #181a23;
+    --fg: #f1f2f6;
+    --muted: #9ba1b3;
+    --line: #2a2d3a;
+    --grid: #252836;
+    --accent-ink: #a98cff;
+    --series-2: #ff9a45;
+    --win: #2fc183;
+    --draw: #6f7486;
+    --loss: #ff5c62;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0f1016;
+  --surface: #181a23;
+  --fg: #f1f2f6;
+  --muted: #9ba1b3;
+  --line: #2a2d3a;
+  --grid: #252836;
+  --accent-ink: #a98cff;
+  --series-2: #ff9a45;
+  --win: #2fc183;
+  --draw: #6f7486;
+  --loss: #ff5c62;
+}
+
+/* 3. Map tokens to Tailwind utilities. "inline" keeps them as var()
+   references, so swapping the variables above re-themes everything.
+   e.g. --color-surface -> bg-surface, text-surface, border-surface */
+@theme inline {
+  --color-page: var(--bg); /* bg-page; "bg-bg" would read badly */
+  --color-surface: var(--surface);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-grid: var(--grid);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-on-accent: var(--on-accent);
+  --color-series-2: var(--series-2);
+  --color-win: var(--win);
+  --color-draw: var(--draw);
+  --color-loss: var(--loss);
+
+  /* font-display, font-body. The names match the @fontsource-variable
+     packages, which you import in main.tsx in step 5. */
+  --font-display:
+    "Bricolage Grotesque Variable", "Trebuchet MS", system-ui, sans-serif;
+  --font-body: "Manrope Variable", "Segoe UI", system-ui, sans-serif;
+
+  /* rounded-tile (rows, tiles, chips), rounded-panel (panels) */
+  --radius-tile: 12px;
+  --radius-panel: 20px;
+}
+
+/* 4. Page defaults, using the utilities just defined. */
+@layer base {
+  body {
+    @apply bg-page text-fg font-body;
+  }
+}
