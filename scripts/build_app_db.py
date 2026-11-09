@@ -14,9 +14,9 @@ from scorecaster.db.app_copy import AppDatabaseBuilder, AppDatabaseError
 
 def main() -> None:
     """Build the app database and print rows per table and its size."""
-    source = Settings.from_env().db_path
-    target = source.parent / "app.db"
-    builder = AppDatabaseBuilder(source, target)
+    settings = Settings.from_env()
+    target = settings.app_db_path
+    builder = AppDatabaseBuilder(settings.db_path, target)
     try:
         counts = builder.build()
     except AppDatabaseError as error:
