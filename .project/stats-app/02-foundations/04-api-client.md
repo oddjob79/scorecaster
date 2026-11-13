@@ -156,6 +156,16 @@ The type names imported from `./generated` are confirmed against the generated f
 - Rename a field in `CompetitionResponse` (e.g. `tier` → `level`), regenerate, and `npm run check` fails where `App.tsx` uses `tier`. Then undo it.
 - `npm run check` and `npm run build` pass.
 
+## Outcome
+
+Done 2026-11-13, worked through step by step. The user typed `api.ts`, `queries.ts`, the provider in `main.tsx` and `App.tsx`; Claude wrote the config and the Python changes.
+
+- **Operation ids:** one `generate_unique_id_function` in `create_app` replaces per-route `operation_id`s. It names every operation after its route function, so the generated types read `ListCompetitionsResponse` and so on, and route function names must stay unique.
+- **Generated output:** `types.gen.ts` (162 lines of type declarations) and `index.ts`. The functions in `api.ts` return the per-operation `…Response` types, so a change to a route's `response_model` reaches them too.
+- **FastAPI documents only the 422** among error responses. The 404 from `HTTPException` isn't in the schema; `getJson` turns any non-2xx response into an `ApiError`.
+- **Checks:** `npm run check` and `npm run build` pass. The page shows the health line and the 20 competitions in nine country groups.
+- **Drift test passed:** renaming `tier` in Python and regenerating made `npm run check` fail where the front end used it.
+
 ## Expected test failures
 
 None. Naming operations after their functions changes only the OpenAPI schema, not any route's behaviour.
