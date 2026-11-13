@@ -1,0 +1,218 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Scorecaster API",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/competitions": {
+      "get": {
+        "tags": [
+          "competitions"
+        ],
+        "summary": "List Competitions",
+        "description": "Return every competition in the app, in menu order.",
+        "operationId": "list_competitions",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CompetitionResponse"
+                  },
+                  "type": "array",
+                  "title": "Response List Competitions"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/competitions/{code}/seasons": {
+      "get": {
+        "tags": [
+          "competitions"
+        ],
+        "summary": "List Seasons",
+        "description": "Return one competition's seasons, newest first.\n\nAn unknown code, e.g. XX, is a 404 \"No competition with code XX\".",
+        "operationId": "list_seasons",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Code"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SeasonResponse"
+                  },
+                  "title": "Response List Seasons"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Check Health",
+        "description": "Return {\"status\": \"ok\"} once the database answers a query.\n\nA missing or unreadable app.db makes the query fail, so the endpoint\nanswers 500 instead.",
+        "operationId": "check_health",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Check Health"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CompetitionResponse": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "country": {
+            "type": "string",
+            "title": "Country"
+          },
+          "tier": {
+            "type": "integer",
+            "title": "Tier"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "name",
+          "country",
+          "tier"
+        ],
+        "title": "CompetitionResponse",
+        "description": "A competition in the app.\n\ne.g. {\"code\": \"E0\", \"name\": \"Premier League\", \"country\": \"England\",\n\"tier\": 1}"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "SeasonResponse": {
+        "properties": {
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "start_year": {
+            "type": "integer",
+            "title": "Start Year"
+          },
+          "end_year": {
+            "type": "integer",
+            "title": "End Year"
+          }
+        },
+        "type": "object",
+        "required": [
+          "label",
+          "start_year",
+          "end_year"
+        ],
+        "title": "SeasonResponse",
+        "description": "A season of a competition.\n\ne.g. {\"label\": \"2024/25\", \"start_year\": 2024, \"end_year\": 2025}"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}
