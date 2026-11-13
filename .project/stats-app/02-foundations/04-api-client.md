@@ -2,7 +2,7 @@
 
 ## Goal
 
-The front end calls the API through a client generated from FastAPI's OpenAPI schema. If an endpoint's response shape changes in Python, `npm run check` fails wherever the front end uses it. TanStack Query fetches and caches the data.
+The front end's API types are generated from FastAPI's OpenAPI schema, and the code that calls the API is hand-written against those types. If an endpoint's response shape changes in Python, `npm run check` fails wherever the front end uses it. TanStack Query fetches and caches the data.
 
 The proof page lists the 20 competitions from `/competitions`, grouped by country, with the health line moved onto the same machinery.
 
@@ -11,8 +11,6 @@ The proof page lists the 20 competitions from `/competitions`, grouped by countr
 02 (the API), 03 (`web/`).
 
 ## The rest of phase 02, one chunk each
-
-Chunk 03's list is renumbered: routing and the app shell are split off from this chunk.
 
 | # | Chunk |
 |---|---|
@@ -23,114 +21,106 @@ Chunk 03's list is renumbered: routing and the app shell are split off from this
 | 08 | Docker Compose, nginx, root readme run instructions |
 | 09 | Tests |
 
-## Decided: which generator (option A)
+## Decided: generated types, hand-written fetch (option C)
 
-The spec named `openapi-typescript`. Its latest release (7.13.0, February 2026) declares `typescript ^5.x` as a peer dependency. Chunk 03 installed TypeScript 6.0.3, so npm refuses the install unless the conflict is overridden.
+Three options were weighed:
+- **A.** Generate everything: types, an SDK function per endpoint, and a bundled HTTP client.
+- **B.** Hand-write everything.
+- **C.** Generate the types only; hand-write the fetch code.
 
-| Option | What it is | Trade-off |
-|---|---|---|
-| **A. `@hey-api/openapi-ts`** (recommended) | Generates the TypeScript types and a typed SDK, one function per endpoint (e.g. `listCompetitions()`), with its fetch client bundled into the generated code. It supports TypeScript 6. | One dev dependency. Actively released (0.99.0). Its config is a small `openapi-ts.config.ts`. |
-| **B. `openapi-typescript` + `openapi-fetch`** | Types only, plus a tiny typed `fetch` wrapper: `api.GET("/competitions")` | Needs an `overrides` entry in `package.json` to accept TypeScript 6 against a peer range that says 5. It probably works, but it's unsupported. |
+C was chosen.
+- **Drift is caught at compile time:** a Pydantic change shows up as a type error in the front end.
+- **Nothing generated runs in the browser:** the generated file holds only `type` declarations, which disappear at build time. Every line that executes is ours, with no generated client acting as a black box.
+- **Why not B:** hand-written types can silently drift from the Python models.
 
-hey-api can also generate TanStack Query helpers. That plugin is left off: you write the query functions yourself, because that's the part worth learning.
+The generator is `@hey-api/openapi-ts` with only its `@hey-api/typescript` plugin. `openapi-typescript` was ruled out because its latest release declares `typescript ^5.x` as a peer, and the project has TypeScript 6.
 
 ## Where the schema comes from
 
-`scripts/export_openapi.py` (new, Python) writes FastAPI's schema to `web/openapi.json` without starting a server: it calls `create_app(...).openapi()`. The generator reads that file. Both `openapi.json` and the generated code are committed. That way:
+`scripts/export_openapi.py` writes FastAPI's schema to `web/openapi.json` without starting a server: it calls `create_app(...).openapi()`. The generator reads that file. Both `openapi.json` and the generated types are committed, so that:
 - `npm run build` works without the API running, including inside the Docker build in chunk 08;
 - a schema change shows up as a diff in review.
 
-## Packages (each needs your go-ahead)
+FastAPI names each operation after its route function (`generate_unique_id_function` in `scorecaster/api/main.py`), so the generated per-operation types read e.g. `ListCompetitionsResponse`.
 
-| Package | Kind | Latest now |
+## Packages
+
+| Package | Kind | Installed |
 |---|---|---|
 | `@tanstack/react-query` | runtime | 5.107.1 |
-| `@hey-api/openapi-ts` (option A) | dev | 0.99.0 |
+| `@hey-api/openapi-ts` | dev | 0.99.0 |
 
 ## Files that change
 
-- `scripts/export_openapi.py` (new, I write it): writes `web/openapi.json`.
-- `web/openapi-ts.config.ts` (new, I write it): input `openapi.json`, output `src/api/generated/`.
-- `web/package.json` (I edit it): a `gen:api` script.
+- `scorecaster/api/main.py` (done): operation ids from route function names.
+- `scripts/export_openapi.py` (done): writes `web/openapi.json`.
+- `web/openapi-ts.config.ts` (done): types only, into `src/api/generated/`.
+- `web/package.json` (done): `gen:api` runs the export, then the generator.
+- `web/.prettierignore`, `web/eslint.config.js` (done): skip `openapi.json` and the generated folder.
 - `web/src/api/generated/` (generated, never edited by hand).
-- `web/src/api/client.ts` (new, you type it): points the generated client at `/api`.
+- `web/src/api/api.ts` (new, you type it): `getJson` and one function per endpoint.
 - `web/src/api/queries.ts` (new, you type it): `queryOptions` for health, competitions and seasons.
 - `web/src/main.tsx` (you edit it): wraps the app in `QueryClientProvider`.
 - `web/src/App.tsx` (you edit it): `useQuery` instead of the hand-rolled effect, plus the competitions list.
 
 ## Order of work
 
-1. You install the packages.
-2. I write the export script, generator config and `gen:api` script, and add the `operation_id`s; you run `npm run gen:api` (which runs the export, then the generator), and we look at what it generated.
-3. You type `client.ts` and `queries.ts`.
+1. You install the packages (done).
+2. You run `npm run gen:api`, and we read the generated types together.
+3. You type `api.ts`, then `queries.ts`.
 4. You wire the provider into `main.tsx`.
 5. You rewrite `App.tsx` with `useQuery`.
-6. Verify, then add a "TanStack Query and a typed client" section to `data/frontend-quickstart.md`.
+6. Verify, then add a "TanStack Query and typed API calls" section to `data/frontend-quickstart.md`.
 
-## Code outline (option A)
-
-```python
-# scripts/export_openapi.py
-"""Write the API's OpenAPI schema to web/openapi.json.
-
-Usage: python scripts/export_openapi.py
-
-Builds the app in memory (no server, no database query) and saves its
-schema, so the front end can generate its client from a file.
-"""
-
-
-def main() -> None:
-    """Write the schema JSON, indented, to web/openapi.json."""
-    # app = create_app(Database("sqlite://"))  -- any database: .openapi()
-    #                                           -- never queries it
-    # path.write_text(json.dumps(app.openapi(), indent=2) + "\n")
-```
+## Code outline
 
 ```ts
-// web/openapi-ts.config.ts
-import { defineConfig } from "@hey-api/openapi-ts";
+// web/src/api/api.ts
+import type { CompetitionResponse, SeasonResponse } from "./generated";
 
-export default defineConfig({
-  input: "openapi.json",           // written by scripts/export_openapi.py
-  output: "src/api/generated",     // regenerated by npm run gen:api
-  plugins: ["@hey-api/client-fetch", "@hey-api/typescript", "@hey-api/sdk"],
-});
-```
+/** An HTTP error from the API, with FastAPI's "detail" message. */
+export class ApiError extends Error {
+  // status: e.g. 404; message: e.g. "No competition with code XX"
+}
 
-```ts
-// web/src/api/client.ts
-// Point the generated client at the proxy prefix: every SDK call becomes
-// /api/<path>, e.g. listCompetitions() -> GET /api/competitions
-import { client } from "./generated/client.gen";
+/** Fetch /api<path> and return its JSON as T; throw ApiError on failure. */
+async function getJson<T>(path: string): Promise<T> {
+  // fetch(`/api${path}`) -> if !response.ok, read {detail} and throw ApiError
+  // -> otherwise return (await response.json()) as T
+}
 
-client.setConfig({ baseUrl: "/api" });
+/** GET /competitions: every competition, in menu order. */
+export const listCompetitions = () =>
+  getJson<CompetitionResponse[]>("/competitions");
+
+/** GET /competitions/{code}/seasons: newest first. */
+export const listSeasons = (code: string) =>
+  getJson<SeasonResponse[]>(`/competitions/${encodeURIComponent(code)}/seasons`);
+
+/** GET /health. */
+export const checkHealth = () => getJson<{ status: string }>("/health");
 ```
 
 ```ts
 // web/src/api/queries.ts
 import { queryOptions } from "@tanstack/react-query";
-import { checkHealth, listCompetitions, listSeasons } from "./generated";
 
-/** Health: {"status": "ok"}. */
 export const healthQuery = queryOptions({
   queryKey: ["health"],
-  // queryFn: call the SDK, throw on error so TanStack Query sees a failure
+  queryFn: checkHealth,
 });
 
-/** All competitions, in menu order. */
 export const competitionsQuery = queryOptions({
   queryKey: ["competitions"],
-  // queryFn: (await listCompetitions({ throwOnError: true })).data
+  queryFn: listCompetitions,
 });
 
-/** One competition's seasons, newest first; the code is part of the key. */
-export function seasonsQuery(code: string) {
-  return queryOptions({
+/** One competition's seasons; the code is part of the cache key. */
+export const seasonsQuery = (code: string) =>
+  queryOptions({
     queryKey: ["competitions", code, "seasons"],
-    // queryFn: listSeasons({ path: { code }, throwOnError: true })
+    queryFn: () => listSeasons(code),
   });
-}
 ```
 
 ```tsx
@@ -146,40 +136,40 @@ const competitions = useQuery(competitionsQuery);  // data: CompetitionResponse[
 // render: title, health line, competitions grouped by country
 ```
 
-Exact names (`client.gen`, `throwOnError`, the SDK function names) are confirmed against what the generator actually writes in step 2, before you type anything.
+The type names imported from `./generated` are confirmed against the generated file in step 2, before you type anything.
 
 ## Risks
 
-- **The SDK function names come from FastAPI's operation ids,** which default to something like `list_competitions_competitions_get`. I add `operation_id="list_competitions"` (and so on) to the three routes, so the generated names read `listCompetitions`. That's a small Python change in chunk 02's routes.
-- **The generated code and `openapi.json` go stale** if the API changes and nobody re-runs the export and generation. `npm run check` won't catch a stale `openapi.json` by itself. The habit is to re-export and regenerate whenever a Pydantic model or route changes.
+- **`openapi.json` and the generated types go stale** if the API changes and nobody re-runs `npm run gen:api`. The habit is to regenerate whenever a Pydantic model or route changes.
+- **`getJson<T>` trusts the server.** `response.json() as T` tells TypeScript the shape without checking it at runtime. The guarantee is that the types match the schema the API publishes, as long as both are generated from the same code.
 - **hey-api is pre-1.0.** Its config keys can change between minor versions. `package-lock.json` pins the version installed.
 - **Known audit finding, accepted (9 Nov 2026).**
-  - **What:** `npm audit` reports 4 high advisories in `js-yaml` 4.x: CPU denial of service from crafted YAML. They come in through `@hey-api/openapi-ts` 0.99.0, whose `json-schema-ref-parser` 1.4.4 pins `js-yaml` 4.2.0. The fix exists only in js-yaml 5, so no hey-api release avoids it yet.
-  - **Why it's accepted:** the generator runs at dev time and reads only our own `openapi.json`. `npm audit --omit=dev`, which covers what ships to the browser, reports 0 vulnerabilities. Forcing js-yaml 5 with `overrides` would risk breaking the generator, and `npm audit fix --force` downgrades to a version that's also affected.
+  - **What:** `npm audit` reports 4 high advisories in `js-yaml` 4.x: CPU denial of service from crafted YAML. They come in through `@hey-api/openapi-ts` 0.99.0, whose `json-schema-ref-parser` 1.4.4 pins `js-yaml` 4.2.0. The fix exists only in js-yaml 5.
+  - **Why it's accepted:** the generator runs at dev time and reads only our own `openapi.json`. `npm audit --omit=dev` reports 0 vulnerabilities.
   - **Next step:** re-check when hey-api moves to js-yaml 5.
-- **hey-api 0.99 needs Node 22.18 or later.** Node was upgraded from 22.17.1 with `nvm install 22`.
+- **hey-api 0.99 needs Node 22.18 or later.** Node was upgraded with `nvm install 22`.
 
 ## Proof
 
 - `npm run gen:api` writes `src/api/generated/` with no errors.
 - With the API running, `npm run dev` shows the health line and the 20 competitions grouped by country, England first.
-- Rename a field in `CompetitionResponse` (e.g. `tier` → `level`), re-export and regenerate, and `npm run check` fails where `App.tsx` uses `tier`. Then undo it.
+- Rename a field in `CompetitionResponse` (e.g. `tier` → `level`), regenerate, and `npm run check` fails where `App.tsx` uses `tier`. Then undo it.
 - `npm run check` and `npm run build` pass.
 
 ## Expected test failures
 
-None. The `operation_id` additions don't change any route's behaviour.
+None. Naming operations after their functions changes only the OpenAPI schema, not any route's behaviour.
 
 ## Scope ledger
 
 **Core**
 
-- export script, generator config, `gen:api` script
-- `operation_id` on the three routes
-- `client.ts`, `queries.ts`, the provider, `App.tsx` on `useQuery`
+- export script, types-only generator config, `gen:api` script, operation ids
+- `api.ts` (`getJson`, `ApiError`, three endpoint functions)
+- `queries.ts`, the provider, `App.tsx` on `useQuery`
 
 **Optional** (ticked = written)
 
-- [ ] TanStack Query Devtools: an in-page panel showing every query, its key, status and cached data (dev-only package)
-- [ ] `QueryClient` defaults tuned for this data (e.g. `staleTime: Infinity`, since app.db only changes when rebuilt) (main.tsx)
-- [x] `npm run gen:api` also runs the Python export, so one command does both: `python ../scripts/export_openapi.py && openapi-ts`. It needs the scorecaster pyenv, which `.python-version` activates inside the repo (package.json)
+- [ ] TanStack Query Devtools (dev-only package)
+- [ ] `QueryClient` defaults tuned for this data, e.g. `staleTime` (main.tsx); revisit in phase 03
+- [x] `npm run gen:api` runs the Python export and the generator in one command (package.json)
