@@ -70,12 +70,12 @@ A running skeleton, all started by Docker Compose:
 | 04 | [Typed API client and TanStack Query](04-api-client.md) | done |
 | 05 | [Routing and app shell](05-routing-shell.md) | done |
 | 06 | [Client state and theme toggle](06-store-theme.md) | done |
-| 07 | Docker Compose, nginx, root readme run instructions, `/debug` page | to plan |
+| 07 | [Docker Compose, nginx, run instructions, /debug page](07-docker-debug.md) | done |
 | 08 | Tests | to plan |
 
 ## Open questions
 
-- Where the new Python packages are listed: `requirements.txt`, or separate `requirements-api.txt` (fastapi, uvicorn) and `requirements-dev.txt` (httpx, pytest), so the pipeline's environment stays lean?
+None. The requirements are split in chunk 07: `requirements-api.txt` holds the API's packages, and `requirements.txt` includes it.
 
 ## Scope ledger
 
@@ -87,8 +87,8 @@ A running skeleton, all started by Docker Compose:
 - [x] typed API calls, TanStack Query, TanStack Router with the four routes
 - [x] app shell with URL-driven league and season selects
 - [x] Zustand persisted store (theme, last league and season)
-- [ ] Docker Compose (`api`, `web`)
-- [ ] root readme run instructions
+- [x] Docker Compose (`api`, `web`)
+- [x] root readme run instructions
 - [ ] tests chunk
 
 **Optional**
@@ -97,4 +97,4 @@ A running skeleton, all started by Docker Compose:
 - [ ] request logging middleware (API)
 - [ ] `build_app_db.py --check`: compare counts against the full database (script)
 - [ ] path aliases such as `@/components` (web config)
-- [ ] a `/debug` page holding the API health status and the router devtools, both taken out of `AppShell`, unlinked from the nav. Requested 2026-11-20; planned for chunk 07 (router.ts, a `DebugPage`, AppShell)
+- [x] a `/debug` page holding the API health status and the router devtools, both taken out of `AppShell`, unlinked from the nav (chunk 07)

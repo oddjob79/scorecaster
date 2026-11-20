@@ -138,6 +138,18 @@ export function DebugPage() {
 - `docker compose ps` shows `web` on `0.0.0.0:8080` and `api` on `127.0.0.1:8001` only; `http://localhost:8001/docs` opens the API docs.
 - `npm run check` passes.
 
+## Outcome
+
+Done 2026-11-20.
+- **Who did what:** the user typed the `/debug` page, its route, and the `AppShell` trim. Claude wrote the requirements split, the Docker files and the readme section.
+- **Verified by the user:** `docker compose up --build` runs the app on 8080. Deep links, `/debug`, the cache headers and gzip all work.
+
+**Departures from the outline:**
+- **`compose.yaml` mounts the `data/` folder, not `app.db` alone.** A single-file bind mount pins the original file, so it wouldn't show `build_app_db.py`'s renamed replacement.
+- **The API also publishes `127.0.0.1:8001`** for direct access and the `/docs` page (decided with the user).
+- **The container user is `appuser`,** not `app`, to distinguish it from the `/app` directory.
+- **The API health check uses Python's `urllib`,** because the slim image has no `curl`. `web` waits for it with `condition: service_healthy`.
+
 ## Expected test failures
 
 None. The requirements split changes no code.
