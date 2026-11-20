@@ -15,12 +15,7 @@ One page shows "Scorecaster" in the approved type and colours, and the API's `/h
 
 ## Not in this chunk
 
-These come in later chunks, one at a time:
-- **04:** routing, TanStack Query, the generated API client, the app shell and pickers, shadcn/ui.
-- **05:** the Zustand store and theme toggle.
-- **06:** the ECharts wrapper.
-- **07:** Docker Compose and readme.
-- **08:** tests.
+Typed API calls, routing, client state, Docker and tests come in later chunks, one at a time. The phase spec (`spec.md`, "Chunks") lists them.
 
 ## Packages (each needs your go-ahead to install)
 

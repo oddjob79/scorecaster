@@ -259,9 +259,9 @@ A chunk file is that chunk's plan. It's used in three steps:
 | # | Phase | Delivers | Depends on |
 |---|---|---|---|
 | 01 | [Design](01-design/spec.md) | Visual direction; brief and mockup for each MVP page | |
-| 02 | [Foundations](02-foundations/spec.md) | `app.db` build; FastAPI skeleton (competitions, seasons); Vite + React + TypeScript scaffold; generated API client; app shell with navigation, theme and Zustand store; ECharts wrapper; Docker Compose; root readme run instructions | 01 |
+| 02 | [Foundations](02-foundations/spec.md) | `app.db` build; FastAPI skeleton (competitions, seasons); Vite + React + TypeScript scaffold; generated API types and TanStack Query; app shell with navigation, theme and Zustand store; Docker Compose; root readme run instructions | 01 |
 | 03 | [League page](03-league-page/spec.md) | Standings and season dates endpoints; date bar; stats table with five views; top performers | 02 |
-| 04 | [Team page](04-team-page/spec.md) | Teams, team season and Elo journey endpoints; pickers; team header; five-view chart panel | 03 |
+| 04 | [Team page](04-team-page/spec.md) | ECharts wrapper and themes; teams, team season and Elo journey endpoints; pickers; team header; five-view chart panel | 03 |
 | 05 | [Matches and landing pages](05-matches-landing/spec.md) | Matches page; landing season metrics and Elo top 10; Playwright tests across the MVP; README screenshots | 04 |
 | 06 | Market section (Extension 1) | Market summary tables; calibration, margins, upsets; this week's fixtures with head-to-head | 05 |
 | 07 | MCP server (Extension 2) | Shared tool functions; MCP server | 05 |

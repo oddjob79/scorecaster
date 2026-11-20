@@ -10,16 +10,9 @@ The proof page lists the 20 competitions from `/competitions`, grouped by countr
 
 02 (the API), 03 (`web/`).
 
-## The rest of phase 02, one chunk each
+## The rest of phase 02
 
-| # | Chunk |
-|---|---|
-| 04 | Typed API client and TanStack Query (this plan) |
-| 05 | Routing (TanStack Router), app shell with navigation and pickers, shadcn/ui |
-| 06 | Zustand store (persisted) and theme toggle |
-| 07 | ECharts wrapper and themes |
-| 08 | Docker Compose, nginx, root readme run instructions |
-| 09 | Tests |
+The chunk list and its status are in the phase spec (`spec.md`, "Chunks").
 
 ## Decided: generated types, hand-written fetch (option C)
 
