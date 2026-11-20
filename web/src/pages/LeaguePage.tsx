@@ -1,8 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { getRouteApi } from "@tanstack/react-router";
+import { useEffect } from "react";
 
 import type { CompetitionResponse } from "../api/generated";
 import { competitionsQuery, seasonsQuery } from "../api/queries";
+import { usePreferences } from "../preferences";
 
 const route = getRouteApi("/league/$code");
 
@@ -26,6 +28,11 @@ export function LeaguePage() {
 
   const competitions = useQuery(competitionsQuery);
   const seasons = useQuery(seasonsQuery(code));
+  const setLastLeague = usePreferences((state) => state.setLastLeague);
+
+  useEffect(() => {
+    setLastLeague({ code, season });
+  }, [code, season, setLastLeague]);
 
   if (!competitions.isSuccess || !seasons.isSuccess) {
     return <p className="text-muted">Loading…</p>;

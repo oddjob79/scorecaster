@@ -3,13 +3,23 @@ import { Link, Outlet } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 
 import { healthQuery } from "../api/queries";
+import { type Theme, usePreferences } from "../preferences";
 
 const NAV_LINK = "rounded-full px-3 py-1.5 font-bold text-muted hover:text-fg";
 const NAV_ACTIVE = { className: "bg-page text-fg" };
 
+const THEMES: { label: string; value: Theme }[] = [
+  { label: "System", value: null },
+  { label: "Light", value: "light" },
+  { label: "Dark", value: "dark" },
+];
+
 export function AppShell() {
   const health = useQuery(healthQuery);
   const apiOk = health.isSuccess && health.data.status === "ok";
+  const theme = usePreferences((state) => state.theme);
+  const setTheme = usePreferences((state) => state.setTheme);
+  const lastLeague = usePreferences((state) => state.lastLeague);
 
   return (
     <>
@@ -25,7 +35,8 @@ export function AppShell() {
           <nav className="flex flex-1 flex-wrap gap-1">
             <Link
               to="/league/$code"
-              params={{ code: "E0" }}
+              params={{ code: lastLeague.code }}
+              search={{ season: lastLeague.season }}
               className={NAV_LINK}
               activeProps={NAV_ACTIVE}
             >
@@ -52,6 +63,24 @@ export function AppShell() {
             />
             API {health.isPending ? "checking" : apiOk ? "ok" : "unreachable"}
           </span>
+
+          <div
+            role="group"
+            aria-label="Theme"
+            className="flex gap-1 rounded-full bg-page p-1"
+          >
+            {THEMES.map(({ label, value }) => (
+              <button
+                key={label}
+                type="button"
+                aria-pressed={theme === value}
+                onClick={() => setTheme(value)}
+                className="rounded-full px-3 py-1 text-sm font-bold text-muted aria-pressed:bg-accent aria-pressed:text-on-accent"
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
       </header>
 
