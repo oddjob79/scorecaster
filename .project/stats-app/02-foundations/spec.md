@@ -1,5 +1,7 @@
 # 02 Foundations
 
+**Status: complete (2026-11-20).**
+
 ## Goal
 
 A running skeleton, all started by Docker Compose:
@@ -71,7 +73,7 @@ A running skeleton, all started by Docker Compose:
 | 05 | [Routing and app shell](05-routing-shell.md) | done |
 | 06 | [Client state and theme toggle](06-store-theme.md) | done |
 | 07 | [Docker Compose, nginx, run instructions, /debug page](07-docker-debug.md) | done |
-| 08 | Tests | to plan |
+| 08 | [Tests](08-tests.md) | done |
 
 ## Open questions
 
@@ -89,12 +91,12 @@ None. The requirements are split in chunk 07: `requirements-api.txt` holds the A
 - [x] Zustand persisted store (theme, last league and season)
 - [x] Docker Compose (`api`, `web`)
 - [x] root readme run instructions
-- [ ] tests chunk
+- [x] tests chunk: pytest for the app database and API; Vitest for search validation, `groupByCountry`, the store and `api.ts`
 
 **Optional**
 
 - [x] `/health` endpoint (API)
 - [ ] request logging middleware (API)
 - [ ] `build_app_db.py --check`: compare counts against the full database (script)
-- [ ] path aliases such as `@/components` (web config)
+- [x] path alias `@/` → `src/` (tsconfig paths, read by Vite) (chunk 08)
 - [x] a `/debug` page holding the API health status and the router devtools, both taken out of `AppShell`, unlinked from the nav (chunk 07)

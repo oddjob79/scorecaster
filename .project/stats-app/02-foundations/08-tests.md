@@ -86,6 +86,25 @@ One pass of tests over what phase 02 built, before the phase merges.
 - `npm test` passes.
 - `npm run check` (now including the tests) passes.
 
+## Outcome
+
+Done 2026-11-20.
+
+**Python:**
+- `tests/conftest.py` gains `source_db_path` (the mini season in a file database) and `app_db_path`.
+- `test_app_db.py` has 5 tests; `test_api.py` has 5, building the app with `create_default_app()` against the temporary database.
+- `python -m pytest -q`: 95 passed.
+
+**Front end:**
+- Vitest 5.1 with jsdom 31, MSW 3.0 and v8 coverage. Claude wrote the config, `src/test/server.ts` and `src/test/setup.ts`; the user typed the tests.
+- The tests live in `src/test/`, kept apart from the code (the user's choice): `lib/search.test.ts`, `lib/groupByCountry.test.ts`, `preferences.test.ts`, `api.test.ts`.
+- `npm test` passes, and `npm run check` now ends with `vitest run`.
+
+**Departures from the outline:**
+- **MSW 3's option is `onUnhandledFrame`,** not `onUnhandledRequest`.
+- **A path alias `@/` → `src/` was added** (`paths` in `tsconfig.app.json`, `resolve.tsconfigPaths: true` in Vite 8). Tests and moved code import with `@/`.
+- **The search validators and `groupByCountry` moved unchanged to `src/lib/`.** `router.ts` and `LeaguePage.tsx` import them.
+
 ## Expected test failures
 
 None in the existing suite.
