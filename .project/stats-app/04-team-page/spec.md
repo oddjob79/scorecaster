@@ -22,6 +22,10 @@ The team page for any team in a league-season, as it stood at 23:59 on any date 
   The header figures (position, points, goal difference, played, form chips 6/4/4) and four of the chart views come from these rows.
 - **Computation:** one pass over the season's matches in date order. It keeps running overall, home and away tallies for every team and ranks all three after each date, with phase 03's table order.
 - **Elo journey endpoint:** `GET /teams/{team_id}/elo`. It returns Elo before each finished match since 2016/17 from `team_match_features`, with the competition each match was in.
+- **Charts foundation (chunk 01, [01-charts.md](01-charts.md)):**
+  - the `echarts` package with modular registration;
+  - our own `<EChart>` wrapper, with loading state, click events and accessible text;
+  - themes built from the CSS variables.
 - **Web:**
   - Cascading pickers: competition, then season, then team. Each choice filters the next.
   - `DateBar` from phase 03.
@@ -66,6 +70,7 @@ Ticked once this phase is broken into chunks.
 
 **Core**
 
+- chunk 01: `echarts`, the `<EChart>` wrapper, CSS-variable themes, `useResolvedTheme`. Its loading state, click events and accessible text are ticked in `01-charts.md`
 - teams, team season (three table positions per match) and Elo journey endpoints
 - cascading competition, season and team pickers
 - `TeamHeader` with stat tiles and form chips with result tooltips

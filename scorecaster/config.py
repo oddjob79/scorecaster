@@ -64,6 +64,11 @@ class Settings:
         """Return the SQLAlchemy URL for the SQLite database."""
         return f"sqlite:///{self.db_path}"
 
+    @property
+    def app_db_path(self) -> Path:
+        """Return the stats app's database: app.db beside the source."""
+        return self.db_path.parent / "app.db"
+
     @classmethod
     def from_env(
         cls, env_file: Path | None = PROJECT_ROOT / ".env"

@@ -1,0 +1,89 @@
+import type { QueryClient } from "@tanstack/react-query";
+import {
+  createRootRouteWithContext,
+  createRoute,
+  createRouter,
+} from "@tanstack/react-router";
+
+import { competitionsQuery, seasonsQuery } from "./api/queries";
+import { queryClient } from "./api/queryClient";
+import { AppShell } from "./components/AppShell";
+import { validateLeagueSearch, validateMatchesSearch } from "./lib/search";
+import { DebugPage } from "./pages/DebugPage";
+import { LandingPage } from "./pages/LandingPage";
+import { LeaguePage } from "./pages/LeaguePage";
+import { MatchesPage } from "./pages/MatchesPage";
+import { NotFoundPage } from "./pages/NotFoundPage";
+import { TeamPage } from "./pages/TeamPage";
+
+interface RouterContext {
+  queryClient: QueryClient;
+}
+
+const rootRoute = createRootRouteWithContext<RouterContext>()({
+  component: AppShell,
+  notFoundComponent: NotFoundPage,
+});
+
+const landingRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/",
+  component: LandingPage,
+});
+
+const leagueRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/league/$code",
+
+  validateSearch: validateLeagueSearch,
+  loader: async ({ context, params }) => {
+    await Promise.all([
+      context.queryClient.query({ ...competitionsQuery, staleTime: "static" }),
+      context.queryClient.query({
+        ...seasonsQuery(params.code),
+        staleTime: "static",
+      }),
+    ]);
+  },
+  component: LeaguePage,
+});
+
+const teamRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/team/$teamId",
+  component: TeamPage,
+});
+
+const matchesRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/matches",
+  validateSearch: validateMatchesSearch,
+  component: MatchesPage,
+});
+
+const debugRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/debug",
+  component: DebugPage,
+});
+
+// The tree: the root with its four children.
+const routeTree = rootRoute.addChildren([
+  landingRoute,
+  leagueRoute,
+  teamRoute,
+  matchesRoute,
+  debugRoute,
+]);
+
+export const router = createRouter({
+  routeTree,
+  context: { queryClient },
+  defaultPreload: "intent",
+});
+
+declare module "@tanstack/react-router" {
+  interface Register {
+    router: typeof router;
+  }
+}
