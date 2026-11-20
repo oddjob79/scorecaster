@@ -16,6 +16,7 @@ import create_db  # noqa: E402
 
 from scorecaster.config import FeatureConfig  # noqa: E402
 from scorecaster.db import Database  # noqa: E402
+from scorecaster.db.app_copy import AppDatabaseBuilder  # noqa: E402
 from scorecaster.features.builder import FeatureBuilder  # noqa: E402
 from scorecaster.ingest.fdcuk import CsvLoader  # noqa: E402
 from scorecaster.ingest.fdcuk.files import CsvFile  # noqa: E402
@@ -72,3 +73,30 @@ def rows(db: Database, sql: str) -> list[tuple]:
     """Return every row an SQL query selects."""
     with db.engine.connect() as connection:
         return [tuple(row) for row in connection.exec_driver_sql(sql)]
+
+
+@pytest.fixture
+def source_db_path(tmp_path: Path) -> Path:
+    """Return a file database holding the mini season and its features.
+
+    The app database build attaches its source by file name, so an
+    in-memory database won't do.
+    """
+    path = tmp_path / "scorecaster.db"
+    database = Database.for_path(path)
+    database.create_schema()
+    create_db.sync_competitions(database, LEAGUES)
+    CsvLoader(database, PAST_SEASON_CURRENT).load(
+        season_file("E0", 2024), read_fixture("mini_E0.csv")
+    )
+    FeatureBuilder(database, FeatureConfig()).rebuild()
+    database.engine.dispose()
+    return path
+
+
+@pytest.fixture
+def app_db_path(source_db_path: Path) -> Path:
+    """Return the app database built from the mini season."""
+    target = source_db_path.with_name("app.db")
+    AppDatabaseBuilder(source_db_path, target).build()
+    return target
