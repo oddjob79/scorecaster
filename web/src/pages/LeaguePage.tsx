@@ -2,24 +2,14 @@ import { useQuery } from "@tanstack/react-query";
 import { getRouteApi } from "@tanstack/react-router";
 import { useEffect } from "react";
 
-import type { CompetitionResponse } from "../api/generated";
 import { competitionsQuery, seasonsQuery } from "../api/queries";
+import { groupByCountry } from "@/lib/groupByCountry";
 import { usePreferences } from "../preferences";
 
 const route = getRouteApi("/league/$code");
 
 const SELECT =
   "rounded-full bg-surface px-4 py-2 font-bold text-fg focus-visible:outline-3 focus-visible:outline-accent";
-
-function groupByCountry(competitions: CompetitionResponse[]) {
-  const groups = new Map<string, CompetitionResponse[]>();
-  for (const competition of competitions) {
-    const group = groups.get(competition.country) ?? [];
-    group.push(competition);
-    groups.set(competition.country, group);
-  }
-  return [...groups];
-}
 
 export function LeaguePage() {
   const { code } = route.useParams();

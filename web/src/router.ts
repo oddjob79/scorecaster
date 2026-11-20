@@ -8,6 +8,7 @@ import {
 import { competitionsQuery, seasonsQuery } from "./api/queries";
 import { queryClient } from "./api/queryClient";
 import { AppShell } from "./components/AppShell";
+import { validateLeagueSearch, validateMatchesSearch } from "./lib/search";
 import { DebugPage } from "./pages/DebugPage";
 import { LandingPage } from "./pages/LandingPage";
 import { LeaguePage } from "./pages/LeaguePage";
@@ -30,16 +31,11 @@ const landingRoute = createRoute({
   component: LandingPage,
 });
 
-type LeagueSearch = { season?: number };
-
 const leagueRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/league/$code",
 
-  validateSearch: (search: Record<string, unknown>): LeagueSearch =>
-    typeof search.season === "number" && Number.isInteger(search.season)
-      ? { season: search.season }
-      : {},
+  validateSearch: validateLeagueSearch,
   loader: async ({ context, params }) => {
     await Promise.all([
       context.queryClient.query({ ...competitionsQuery, staleTime: "static" }),
@@ -58,15 +54,10 @@ const teamRoute = createRoute({
   component: TeamPage,
 });
 
-type MatchesSearch = { date?: string };
-
 const matchesRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/matches",
-  validateSearch: (search: Record<string, unknown>): MatchesSearch =>
-    typeof search.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(search.date)
-      ? { date: search.date }
-      : {},
+  validateSearch: validateMatchesSearch,
   component: MatchesPage,
 });
 
