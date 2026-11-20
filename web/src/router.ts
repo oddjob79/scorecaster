@@ -8,6 +8,7 @@ import {
 import { competitionsQuery, seasonsQuery } from "./api/queries";
 import { queryClient } from "./api/queryClient";
 import { AppShell } from "./components/AppShell";
+import { DebugPage } from "./pages/DebugPage";
 import { LandingPage } from "./pages/LandingPage";
 import { LeaguePage } from "./pages/LeaguePage";
 import { MatchesPage } from "./pages/MatchesPage";
@@ -69,12 +70,19 @@ const matchesRoute = createRoute({
   component: MatchesPage,
 });
 
+const debugRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/debug",
+  component: DebugPage,
+});
+
 // The tree: the root with its four children.
 const routeTree = rootRoute.addChildren([
   landingRoute,
   leagueRoute,
   teamRoute,
   matchesRoute,
+  debugRoute,
 ]);
 
 export const router = createRouter({

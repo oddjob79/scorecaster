@@ -1,8 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
 import { Link, Outlet } from "@tanstack/react-router";
-import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 
-import { healthQuery } from "../api/queries";
 import { type Theme, usePreferences } from "../preferences";
 
 const NAV_LINK = "rounded-full px-3 py-1.5 font-bold text-muted hover:text-fg";
@@ -15,8 +12,6 @@ const THEMES: { label: string; value: Theme }[] = [
 ];
 
 export function AppShell() {
-  const health = useQuery(healthQuery);
-  const apiOk = health.isSuccess && health.data.status === "ok";
   const theme = usePreferences((state) => state.theme);
   const setTheme = usePreferences((state) => state.setTheme);
   const lastLeague = usePreferences((state) => state.lastLeague);
@@ -55,15 +50,6 @@ export function AppShell() {
             </Link>
           </nav>
 
-          <span className="flex items-center gap-2 text-sm font-bold text-muted">
-            <span
-              className={`h-2.5 w-2.5 rounded-full ${
-                health.isPending ? "bg-draw" : apiOk ? "bg-win" : "bg-loss"
-              }`}
-            />
-            API {health.isPending ? "checking" : apiOk ? "ok" : "unreachable"}
-          </span>
-
           <div
             role="group"
             aria-label="Theme"
@@ -87,8 +73,6 @@ export function AppShell() {
       <main className="mx-auto max-w-5xl px-4 py-8">
         <Outlet />
       </main>
-
-      <TanStackRouterDevtools />
     </>
   );
 }
