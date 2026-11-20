@@ -84,3 +84,7 @@ Ticked once this phase is broken into chunks.
 - request logging middleware (API)
 - `build_app_db.py --check`: compare counts against the full database (script)
 - path aliases such as `@/components` (web config)
+
+**To do (requested 2026-11-20, not yet scheduled)**
+
+- A `/debug` page holding the API health status and the TanStack Router devtools, both taken out of `AppShell`. The main site shows neither. The page isn't linked from the nav. (router.ts, a `DebugPage`, AppShell)

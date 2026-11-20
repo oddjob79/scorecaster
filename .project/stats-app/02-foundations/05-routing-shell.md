@@ -148,6 +148,24 @@ export function LeaguePage() {
   - `/matches?date=2025-02-01` shows the date.
 - **Checks:** `npm run check` and `npm run build` pass. `<Link to="/leage/$code">` (misspelt) is a type error.
 
+## Outcome
+
+Done 2026-11-20, worked through step by step. The user typed `queryClient.ts`, `router.ts`, `main.tsx`, `AppShell` and `LeaguePage`; Claude wrote the placeholder pages and the not-found page.
+
+**Departures from the outline:**
+- **Loaders use `queryClient.query({ ...options, staleTime: "static" })`.** `ensureQueryData` is deprecated in Query 5.107.
+- **The `QueryClient` lives in `src/api/queryClient.ts`,** so `main.tsx` and the router's context share one instance.
+- **Pages read their params with `getRouteApi("<route id>")`,** not the route objects, which avoids a circular import with `router.ts`.
+- **`App.tsx` is deleted.** Its title is in `LandingPage`, its health line in `AppShell`, and its grouping in `LeaguePage`'s `<optgroup>`s.
+- **Devtools need no guard:** the package renders nothing outside development.
+
+**Known gaps:**
+- **Nav targets:** "Leagues" links to `/league/E0` and "Teams" to `/team/1` until chunk 06 (last-used league) and phase 04 (team picker). "Leagues" highlights only on E0.
+- **Unknown league codes** show the router's default error display.
+- **The health status and devtools** move to a `/debug` page (listed under "To do" in the phase spec).
+
+**Results:** the user verified navigation, both selects with Back and Forward, search-param validation, the not-found page and hover prefetch. `npm run check` passes.
+
 ## Expected test failures
 
 None. No Python changes.
