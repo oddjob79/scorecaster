@@ -1,18 +1,30 @@
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
-import { defineConfig } from "vite";
+import { defineConfig } from "vitest/config";
 
-// https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  resolve: { tsconfigPaths: true },
   server: {
     proxy: {
-      // /api/health -> http://localhost:8000/health. nginx does the same
-      // forwarding in Docker, so front-end URLs are /api/... everywhere.
       "/api": {
         target: "http://localhost:8000",
         rewrite: (path) => path.replace(/^\/api/, ""),
       },
+    },
+  },
+  test: {
+    environment: "jsdom",
+    setupFiles: ["./src/test/setup.ts"],
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "html"],
+      include: ["src/**/*.{ts,tsx}"],
+      exclude: [
+        "src/api/generated/**",
+        "src/test/**",
+        "src/**/*.test.{ts,tsx}",
+      ],
     },
   },
 });
